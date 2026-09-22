@@ -94,14 +94,14 @@ h2 { font-size: 19px; }
 .scanner-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(1); background: #020617; }
 .scanner-mask { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .scanner-mask::before { content: ""; position: absolute; inset: 0; background: rgba(2, 6, 23, 0.28); }
-.scanner-frame { position: relative; width: min(76%, 520px); height: min(44%, 170px); border: 2px solid rgba(255,255,255,0.9); border-radius: 16px; box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.16); }
+.scanner-frame { position: relative; width: min(90%, 700px); height: min(38%, 150px); border: 2px solid rgba(255,255,255,0.94); border-radius: 16px; box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.12); }
 .scanner-frame::before, .scanner-frame::after { content: ""; position: absolute; inset: 9px 22%; border-top: 2px solid rgba(255,255,255,0.32); }
 .scanner-frame::after { top: auto; bottom: 9px; }
 .scanner-help, .scanner-status, .scanner-error {
   position: absolute; left: 50%; transform: translateX(-50%); bottom: 16px; z-index: 2;
   padding: 9px 12px; border-radius: 10px; font-size: 12px; text-align: center; backdrop-filter: blur(8px);
 }
-.scanner-help, .scanner-status { color: white; background: rgba(15, 23, 42, 0.66); }
+.scanner-help, .scanner-status { color: white; background: rgba(15, 23, 42, 0.72); }
 .scanner-error { width: calc(100% - 32px); color: #7f1d1d; background: rgba(254, 242, 242, 0.94); }
 
 .scan-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
@@ -113,6 +113,11 @@ h2 { font-size: 19px; }
 }
 .manual-row input:focus, .search-wrap input:focus { border-color: #64748b; box-shadow: 0 0 0 3px rgba(100,116,139,0.12); }
 .field-help { margin-top: 7px; color: var(--slate); font-size: 11px; }
+
+.camera-selector { margin-top: 10px; display: grid; gap: 6px; padding: 12px; background: #f8fafc; border-top: 1px solid rgba(226, 232, 240, 0.5); }
+.camera-selector label { font-size: 12px; font-weight: 800; color: #334155; }
+.camera-selector select { width: 100%; min-height: 42px; padding: 8px 10px; border-radius: 10px; border: 1px solid #d5d9e2; background: white; color: #0f172a; font-size: 14px; outline: none; }
+.camera-selector select:focus { border-color: #64748b; box-shadow: 0 0 0 3px rgba(100,116,139,0.12); }
 
 .summary-label { color: var(--slate); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 .summary-number { margin-top: 4px; font-size: 46px; line-height: 1; font-weight: 850; letter-spacing: -0.05em; }
