@@ -10,6 +10,7 @@ const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
 export default function App() {
   const [notes, setNotes] = useState<NotaFiscal[]>(() => loadNotes())
   const [scannerOpen, setScannerOpen] = useState(true)
+  const [scanTrigger, setScanTrigger] = useState(0)
   const [manualOpen, setManualOpen] = useState(false)
   const [manualValue, setManualValue] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
@@ -91,6 +92,11 @@ export default function App() {
     setInstallPrompt(null)
   }
 
+  function requestScan() {
+    setScannerOpen(true)
+    setScanTrigger((value) => value + 1)
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -122,10 +128,16 @@ export default function App() {
               </button>
             </div>
 
-            {scannerOpen && <Scanner enabled={scannerOpen} onDetected={addNoteFromRaw} />}
+            {scannerOpen && (
+              <Scanner
+                enabled={scannerOpen}
+                onDetected={addNoteFromRaw}
+                scanTrigger={scanTrigger}
+              />
+            )}
 
             <div className="scan-actions">
-              <button className="btn primary" onClick={() => setScannerOpen(true)}>Ler código</button>
+              <button className="btn primary" onClick={requestScan}>Ler código</button>
               <button className="btn secondary" onClick={() => setManualOpen(true)}>Digitar chave</button>
               <button className="btn ghost" onClick={() => addNoteFromRaw(SAMPLE_KEY)}>Testar com exemplo</button>
             </div>
