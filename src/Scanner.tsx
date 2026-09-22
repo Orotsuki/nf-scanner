@@ -448,8 +448,6 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
     await startScanner(deviceId)
   }
 
-  const preferredId = selectedCameraId || cameras[0]?.deviceId || ''
-
   return (
     <div className="scanner-card">
       <div className="scanner-viewport">
