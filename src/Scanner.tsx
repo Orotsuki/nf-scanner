@@ -14,17 +14,36 @@ type CameraDevice = {
 
 const CAMERA_STORAGE_KEY = 'nfscanner-selected-camera'
 
+function cameraKind(label: string): 'back' | 'front' | 'unknown' {
+  const text = label.toLowerCase()
+
+  if (/front|frontal|selfie|user/.test(text)) return 'front'
+  if (/back|rear|traseira|environment/.test(text)) return 'back'
+
+  // Some Android browsers expose only generic names such as
+  // "camera 0, facing back". Keep this as a fallback.
+  if (/facing\s*back/.test(text)) return 'back'
+  if (/facing\s*front/.test(text)) return 'front'
+
+  return 'unknown'
+}
+
 function scoreCamera(label: string): number {
   const text = label.toLowerCase()
   let score = 0
+  const kind = cameraKind(label)
 
-  // Prefer rear-facing cameras and avoid front/ultra-wide/macro/tele lenses.
-  if (/front|frontal|selfie|user/.test(text)) score -= 100
-  if (/back|rear|traseira|environment/.test(text)) score += 30
-  if (/ultra\s*-?\s*wide|ultrawide|wide\s*-?\s*angle|0[.,][56]\s*x|0\.5x|0\.6x/.test(text)) score -= 80
-  if (/macro/.test(text)) score -= 50
-  if (/tele|zoom|\b2x\b|\b3x\b|\b5x\b/.test(text)) score -= 20
-  if (/main|principal|primary|camera\s*0|camera\s*1/.test(text)) score += 15
+  if (kind === 'front') score -= 1000
+  if (kind === 'back') score += 100
+
+  // On the S24 FE tested with this project, "camera 0, facing back"
+  // is the main 1× camera. Prefer this pattern when the browser exposes it.
+  if (/camera\s*0.*facing\s*back/.test(text)) score += 250
+
+  if (/main|principal|primary/.test(text)) score += 80
+  if (/ultra\s*-?\s*wide|ultrawide|wide\s*-?\s*angle|0[.,][56]\s*x|0\.5x|0\.6x/.test(text)) score -= 140
+  if (/macro/.test(text)) score -= 100
+  if (/tele|zoom|\b2x\b|\b3x\b|\b5x\b/.test(text)) score -= 40
 
   return score
 }
@@ -37,6 +56,31 @@ function choosePreferredCamera(cameras: CameraDevice[]): CameraDevice | undefine
   if (saved) return saved
 
   return [...cameras].sort((a, b) => scoreCamera(b.label) - scoreCamera(a.label))[0]
+}
+
+function friendlyCameraLabel(
+  camera: CameraDevice,
+  preferredId: string,
+  index: number,
+): string {
+  const text = camera.label.toLowerCase()
+  const kind = cameraKind(camera.label)
+
+  if (kind === 'front') return 'Frontal'
+
+  if (kind === 'back') {
+    if (camera.deviceId === preferredId) return 'Traseira principal (1×)'
+    if (/ultra\s*-?\s*wide|ultrawide|wide\s*-?\s*angle|0[.,][56]\s*x|0\.5x|0\.6x/.test(text)) {
+      return 'Traseira ultrawide (0,6×)'
+    }
+    if (/macro/.test(text)) return 'Traseira macro'
+    if (/tele|zoom|\b2x\b|\b3x\b|\b5x\b/.test(text)) {
+      return 'Traseira teleobjetiva'
+    }
+    return `Traseira auxiliar ${index + 1}`
+  }
+
+  return `Câmera ${index + 1}`
 }
 
 export default function Scanner({ enabled, onDetected }: Props) {
@@ -71,8 +115,8 @@ export default function Scanner({ enabled, onDetected }: Props) {
     ])
 
     const reader = new BrowserMultiFormatReader(hints, {
-      delayBetweenScanAttempts: 250,
-      delayBetweenScanSuccess: 800,
+      delayBetweenScanAttempts: 180,
+      delayBetweenScanSuccess: 750,
       tryPlayVideoTimeout: 7000,
     })
 
@@ -95,11 +139,30 @@ export default function Scanner({ enabled, onDetected }: Props) {
             if (lastResultRef.current === text) {
               lastResultRef.current = ''
             }
-          }, 1200)
+          }, 1100)
         },
       )
 
       controlsRef.current = controls
+
+      // Give the browser a moment to attach the selected stream, then request
+      // continuous autofocus when the device exposes that capability.
+      window.setTimeout(() => {
+        const stream = videoRef.current?.srcObject as MediaStream | null
+        const track = stream?.getVideoTracks()[0]
+        if (!track) return
+
+        const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
+          focusMode?: string[]
+        }
+
+        if (capabilities.focusMode?.includes('continuous')) {
+          void track.applyConstraints({
+            advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+          })
+        }
+      }, 250)
+
       setStarting(false)
     } catch (cause: unknown) {
       setStarting(false)
@@ -117,7 +180,6 @@ export default function Scanner({ enabled, onDetected }: Props) {
     setLoadingCameras(true)
 
     try {
-      // Asking for permission first makes camera labels available on many browsers.
       const permissionStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
@@ -175,10 +237,15 @@ export default function Scanner({ enabled, onDetected }: Props) {
   }, [enabled])
 
   const changeCamera = async (deviceId: string) => {
+    const camera = cameras.find((item) => item.deviceId === deviceId)
+    if (!camera) return
+
     setSelectedCameraId(deviceId)
     localStorage.setItem(CAMERA_STORAGE_KEY, deviceId)
     await startScanner(deviceId)
   }
+
+  const preferredId = selectedCameraId || cameras[0]?.deviceId || ''
 
   return (
     <div className="scanner-card">
@@ -205,7 +272,7 @@ export default function Scanner({ enabled, onDetected }: Props) {
 
         {!loadingCameras && !starting && !error && enabled && (
           <div className="scanner-help">
-            Aponte para o código de barras ou QR Code
+            Enquadre o código dentro da área marcada
           </div>
         )}
 
@@ -213,35 +280,21 @@ export default function Scanner({ enabled, onDetected }: Props) {
       </div>
 
       {cameras.length > 1 && (
-        <div
-          className="camera-selector"
-          style={{ marginTop: 10, display: 'grid', gap: 6 }}
-        >
-          <label htmlFor="camera-select" style={{ fontWeight: 600 }}>
-            Câmera
-          </label>
+        <div className="camera-selector">
+          <label htmlFor="camera-select">Câmera</label>
           <select
             id="camera-select"
             value={selectedCameraId}
             onChange={(event) => void changeCamera(event.target.value)}
-            style={{
-              width: '100%',
-              minHeight: 42,
-              padding: '8px 10px',
-              borderRadius: 10,
-              border: '1px solid #d5d9e2',
-              background: '#fff',
-              fontSize: 14,
-            }}
           >
             {cameras.map((camera, index) => (
               <option key={camera.deviceId} value={camera.deviceId}>
-                {camera.label || `Câmera ${index + 1}`}
+                {friendlyCameraLabel(camera, preferredId, index)}
               </option>
             ))}
           </select>
           <div className="field-help">
-            O aplicativo tenta selecionar automaticamente a câmera traseira principal e memoriza sua escolha.
+            A principal 1× é usada por padrão. Sua escolha fica salva neste aparelho.
           </div>
         </div>
       )}
