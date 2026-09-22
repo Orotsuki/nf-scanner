@@ -403,7 +403,7 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
       if (!reader || !video) return
 
       try {
-        const result = await reader.decodeFromVideoElement(video)
+        const result = await reader.decodeOnceFromVideoElement(video)
         reportDecodedValue(result.getText())
       } catch {
         // A scan attempt failing is not a fatal camera error.
