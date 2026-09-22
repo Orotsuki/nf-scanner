@@ -121,14 +121,21 @@ async function createNativeDetector(): Promise<NativeDetector | null> {
   }
 }
 
-function extract44DigitKey(raw: string): string | null {
+function extractAccessKey(raw: string): string | null {
   try {
-    const decoded = decodeURIComponent(raw)
-    const match = decoded.match(/\d{44}/)
-    return match?.[0] ?? null
+    const decoded = decodeURIComponent(raw).toUpperCase()
+    const nfseMatch = decoded.match(/[0-9]{9}[0-9A-Z]{14}[0-9]{27}/)
+    if (nfseMatch?.[0]) return nfseMatch[0]
+
+    const nfeMatch = decoded.match(/\d{44}/)
+    return nfeMatch?.[0] ?? null
   } catch {
-    const match = raw.match(/\d{44}/)
-    return match?.[0] ?? null
+    const text = raw.toUpperCase()
+    const nfseMatch = text.match(/[0-9]{9}[0-9A-Z]{14}[0-9]{27}/)
+    if (nfseMatch?.[0]) return nfseMatch[0]
+
+    const nfeMatch = text.match(/\d{44}/)
+    return nfeMatch?.[0] ?? null
   }
 }
 
@@ -156,7 +163,7 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
   }, [onDetected])
 
   const reportDecodedValue = (raw: string) => {
-    const key = extract44DigitKey(raw)
+    const key = extractAccessKey(raw)
 
     // Reject partial or noisy reads before they reach App.
     if (!key || key === lastResultRef.current) return
@@ -212,7 +219,7 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
           const codes = await nativeDetectorRef.current.detect(video)
           for (const code of codes) {
             if (code.rawValue) {
-              const key = extract44DigitKey(code.rawValue)
+              const key = extractAccessKey(code.rawValue)
               if (key) {
                 reportDecodedValue(key)
                 break
@@ -395,7 +402,7 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
           const codes = await detector.detect(video)
           for (const code of codes) {
             if (code.rawValue) {
-              const key = extract44DigitKey(code.rawValue)
+              const key = extractAccessKey(code.rawValue)
               if (key) {
                 reportDecodedValue(key)
                 return
