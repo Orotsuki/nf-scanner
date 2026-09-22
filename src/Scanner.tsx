@@ -5,6 +5,7 @@ import { BarcodeFormat, DecodeHintType } from '@zxing/library'
 type Props = {
   enabled: boolean
   onDetected: (value: string) => void
+  scanTrigger?: number
 }
 
 type CameraDevice = {
@@ -12,17 +13,21 @@ type CameraDevice = {
   label: string
 }
 
+type NativeDetector = {
+  detect: (
+    source: HTMLVideoElement,
+  ) => Promise<Array<{ rawValue?: string; format?: string }>>
+}
+
+type NativeDetectorConstructor = new (options?: { formats?: string[] }) => NativeDetector
+
 const CAMERA_STORAGE_KEY = 'nfscanner-selected-camera'
 
 function cameraKind(label: string): 'back' | 'front' | 'unknown' {
   const text = label.toLowerCase()
 
   if (/front|frontal|selfie|user/.test(text)) return 'front'
-  if (/back|rear|traseira|environment/.test(text)) return 'back'
-
-  // Some Android browsers expose only generic names such as
-  // "camera 0, facing back". Keep this as a fallback.
-  if (/facing\s*back/.test(text)) return 'back'
+  if (/back|rear|traseira|environment|facing\s*back/.test(text)) return 'back'
   if (/facing\s*front/.test(text)) return 'front'
 
   return 'unknown'
@@ -36,10 +41,7 @@ function scoreCamera(label: string): number {
   if (kind === 'front') score -= 1000
   if (kind === 'back') score += 100
 
-  // On the S24 FE tested with this project, "camera 0, facing back"
-  // is the main 1× camera. Prefer this pattern when the browser exposes it.
   if (/camera\s*0.*facing\s*back/.test(text)) score += 250
-
   if (/main|principal|primary/.test(text)) score += 80
   if (/ultra\s*-?\s*wide|ultrawide|wide\s*-?\s*angle|0[.,][56]\s*x|0\.5x|0\.6x/.test(text)) score -= 140
   if (/macro/.test(text)) score -= 100
@@ -83,11 +85,62 @@ function friendlyCameraLabel(
   return `Câmera ${index + 1}`
 }
 
-export default function Scanner({ enabled, onDetected }: Props) {
+function getNativeDetectorConstructor(): NativeDetectorConstructor | null {
+  const candidate = (globalThis as typeof globalThis & {
+    BarcodeDetector?: NativeDetectorConstructor
+  }).BarcodeDetector
+
+  return typeof candidate === 'function' ? candidate : null
+}
+
+async function createNativeDetector(): Promise<NativeDetector | null> {
+  const Constructor = getNativeDetectorConstructor()
+  if (!Constructor) return null
+
+  try {
+    const supported =
+      typeof (Constructor as typeof Constructor & {
+        getSupportedFormats?: () => Promise<string[]>
+      }).getSupportedFormats === 'function'
+        ? await (
+            Constructor as typeof Constructor & {
+              getSupportedFormats: () => Promise<string[]>
+            }
+          ).getSupportedFormats()
+        : []
+
+    const desired = ['code_128', 'qr_code'].filter((format) =>
+      supported.includes(format),
+    )
+
+    return desired.length
+      ? new Constructor({ formats: desired })
+      : new Constructor()
+  } catch {
+    return null
+  }
+}
+
+function extract44DigitKey(raw: string): string | null {
+  try {
+    const decoded = decodeURIComponent(raw)
+    const match = decoded.match(/\d{44}/)
+    return match?.[0] ?? null
+  } catch {
+    const match = raw.match(/\d{44}/)
+    return match?.[0] ?? null
+  }
+}
+
+export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const controlsRef = useRef<{ stop: () => void } | null>(null)
-  const lastResultRef = useRef('')
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
+  const nativeDetectorRef = useRef<NativeDetector | null>(null)
+  const nativeTimerRef = useRef<number | null>(null)
+  const nativeBusyRef = useRef(false)
+  const lastResultRef = useRef('')
+  const onDetectedRef = useRef(onDetected)
 
   const [cameras, setCameras] = useState<CameraDevice[]>([])
   const [selectedCameraId, setSelectedCameraId] = useState('')
@@ -95,10 +148,83 @@ export default function Scanner({ enabled, onDetected }: Props) {
   const [starting, setStarting] = useState(false)
   const [loadingCameras, setLoadingCameras] = useState(false)
 
+  useEffect(() => {
+    onDetectedRef.current = onDetected
+  }, [onDetected])
+
+  const reportDecodedValue = (raw: string) => {
+    const key = extract44DigitKey(raw)
+
+    // Reject partial or noisy reads before they reach App.
+    if (!key || key === lastResultRef.current) return
+
+    lastResultRef.current = key
+    onDetectedRef.current(key)
+
+    window.setTimeout(() => {
+      if (lastResultRef.current === key) lastResultRef.current = ''
+    }, 1200)
+  }
+
+  const stopNativeDetector = () => {
+    if (nativeTimerRef.current !== null) {
+      window.clearTimeout(nativeTimerRef.current)
+      nativeTimerRef.current = null
+    }
+    nativeBusyRef.current = false
+    nativeDetectorRef.current = null
+  }
+
   const stopScanner = () => {
+    stopNativeDetector()
     controlsRef.current?.stop()
     controlsRef.current = null
     readerRef.current = null
+
+    const stream = videoRef.current?.srcObject as MediaStream | null
+    stream?.getTracks().forEach((track) => track.stop())
+    if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  const startNativeLoop = async () => {
+    const video = videoRef.current
+    if (!video) return
+
+    const detector = await createNativeDetector()
+    if (!detector) return
+
+    nativeDetectorRef.current = detector
+
+    const loop = async () => {
+      if (!enabled || !nativeDetectorRef.current || !video || video.readyState < 2) {
+        nativeTimerRef.current = window.setTimeout(loop, 250)
+        return
+      }
+
+      if (!nativeBusyRef.current) {
+        nativeBusyRef.current = true
+        try {
+          const codes = await nativeDetectorRef.current.detect(video)
+          for (const code of codes) {
+            if (code.rawValue) {
+              const key = extract44DigitKey(code.rawValue)
+              if (key) {
+                reportDecodedValue(key)
+                break
+              }
+            }
+          }
+        } catch {
+          // Native detection is best-effort; ZXing continues as fallback.
+        } finally {
+          nativeBusyRef.current = false
+        }
+      }
+
+      nativeTimerRef.current = window.setTimeout(loop, 120)
+    }
+
+    nativeTimerRef.current = window.setTimeout(loop, 120)
   }
 
   const startScanner = async (deviceId?: string) => {
@@ -110,12 +236,13 @@ export default function Scanner({ enabled, onDetected }: Props) {
 
     const hints = new Map<DecodeHintType, unknown>()
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.QR_CODE,
       BarcodeFormat.CODE_128,
+      BarcodeFormat.QR_CODE,
     ])
+    hints.set(DecodeHintType.TRY_HARDER, true)
 
     const reader = new BrowserMultiFormatReader(hints, {
-      delayBetweenScanAttempts: 180,
+      delayBetweenScanAttempts: 100,
       delayBetweenScanSuccess: 750,
       tryPlayVideoTimeout: 7000,
     })
@@ -123,47 +250,56 @@ export default function Scanner({ enabled, onDetected }: Props) {
     readerRef.current = reader
 
     try {
-      const controls = await reader.decodeFromVideoDevice(
-        deviceId || undefined,
+      const constraints: MediaStreamConstraints = {
+        video: deviceId
+          ? {
+              deviceId: { exact: deviceId },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30, max: 30 },
+            }
+          : {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+              frameRate: { ideal: 30, max: 30 },
+            },
+        audio: false,
+      }
+
+      const controls = await reader.decodeFromConstraints(
+        constraints,
         videoRef.current,
         (result) => {
           if (!result) return
-
-          const text = result.getText()
-          if (!text || text === lastResultRef.current) return
-
-          lastResultRef.current = text
-          onDetected(text)
-
-          window.setTimeout(() => {
-            if (lastResultRef.current === text) {
-              lastResultRef.current = ''
-            }
-          }, 1100)
+          reportDecodedValue(result.getText())
         },
       )
 
       controlsRef.current = controls
 
-      // Give the browser a moment to attach the selected stream, then request
-      // continuous autofocus when the device exposes that capability.
-      window.setTimeout(() => {
-        const stream = videoRef.current?.srcObject as MediaStream | null
-        const track = stream?.getVideoTracks()[0]
-        if (!track) return
+      const stream = videoRef.current.srcObject as MediaStream | null
+      const track = stream?.getVideoTracks()[0]
 
+      if (track) {
         const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
           focusMode?: string[]
         }
 
         if (capabilities.focusMode?.includes('continuous')) {
-          void track.applyConstraints({
-            advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
-          })
+          try {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+            })
+          } catch {
+            // Autofocus request is optional.
+          }
         }
-      }, 250)
+      }
 
+      await videoRef.current.play().catch(() => undefined)
       setStarting(false)
+      void startNativeLoop()
     } catch (cause: unknown) {
       setStarting(false)
 
@@ -235,6 +371,47 @@ export default function Scanner({ enabled, onDetected }: Props) {
     // Scanner is mounted/unmounted by App; when enabled changes we restart it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled])
+
+  useEffect(() => {
+    if (!enabled || scanTrigger === 0) return
+
+    const video = videoRef.current
+    const detector = nativeDetectorRef.current
+    const reader = readerRef.current
+
+    const oneShot = async () => {
+      if (video && detector && video.readyState >= 2 && !nativeBusyRef.current) {
+        nativeBusyRef.current = true
+        try {
+          const codes = await detector.detect(video)
+          for (const code of codes) {
+            if (code.rawValue) {
+              const key = extract44DigitKey(code.rawValue)
+              if (key) {
+                reportDecodedValue(key)
+                return
+              }
+            }
+          }
+        } catch {
+          // Fall through to the ZXing frame scan below.
+        } finally {
+          nativeBusyRef.current = false
+        }
+      }
+
+      if (!reader || !video) return
+
+      try {
+        const result = await reader.decodeFromVideoElement(video)
+        reportDecodedValue(result.getText())
+      } catch {
+        // A scan attempt failing is not a fatal camera error.
+      }
+    }
+
+    void oneShot()
+  }, [enabled, scanTrigger])
 
   const changeCamera = async (deviceId: string) => {
     const camera = cameras.find((item) => item.deviceId === deviceId)
