@@ -147,6 +147,9 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
   const [error, setError] = useState('')
   const [starting, setStarting] = useState(false)
   const [loadingCameras, setLoadingCameras] = useState(false)
+  const [cameraMenuOpen, setCameraMenuOpen] = useState(false)
+  const [flashSupported, setFlashSupported] = useState(false)
+  const [flashOn, setFlashOn] = useState(false)
 
   useEffect(() => {
     onDetectedRef.current = onDetected
@@ -177,6 +180,8 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
 
   const stopScanner = () => {
     stopNativeDetector()
+    setFlashSupported(false)
+    setFlashOn(false)
     controlsRef.current?.stop()
     controlsRef.current = null
     readerRef.current = null
@@ -284,7 +289,11 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
       if (track) {
         const capabilities = track.getCapabilities() as MediaTrackCapabilities & {
           focusMode?: string[]
+          torch?: boolean
         }
+
+        setFlashSupported(capabilities.torch === true)
+        setFlashOn(false)
 
         if (capabilities.focusMode?.includes('continuous')) {
           try {
@@ -413,12 +422,29 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
     void oneShot()
   }, [enabled, scanTrigger])
 
+  const toggleFlash = async () => {
+    const stream = videoRef.current?.srcObject as MediaStream | null
+    const track = stream?.getVideoTracks()[0]
+    if (!track || !flashSupported) return
+
+    const next = !flashOn
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: next } as MediaTrackConstraintSet],
+      })
+      setFlashOn(next)
+    } catch {
+      setError('Não foi possível alterar o flash desta câmera.')
+    }
+  }
+
   const changeCamera = async (deviceId: string) => {
     const camera = cameras.find((item) => item.deviceId === deviceId)
     if (!camera) return
 
     setSelectedCameraId(deviceId)
     localStorage.setItem(CAMERA_STORAGE_KEY, deviceId)
+    setCameraMenuOpen(false)
     await startScanner(deviceId)
   }
 
@@ -439,6 +465,51 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
           <div className="scanner-frame" />
         </div>
 
+        <div className="scanner-tools">
+          <button
+            type="button"
+            className={`scanner-menu-btn ${cameraMenuOpen ? 'active' : ''}`}
+            onClick={() => setCameraMenuOpen((value) => !value)}
+            aria-label="Opções da câmera"
+            aria-expanded={cameraMenuOpen}
+          >
+            ⋯
+          </button>
+
+          {cameraMenuOpen && (
+            <div className="scanner-menu" role="dialog" aria-label="Opções da câmera">
+              <div className="scanner-menu-title">Opções da câmera</div>
+
+              <label htmlFor="camera-select">Câmera</label>
+              <select
+                id="camera-select"
+                value={selectedCameraId}
+                onChange={(event) => void changeCamera(event.target.value)}
+              >
+                {cameras.map((camera, index) => (
+                  <option key={camera.deviceId} value={camera.deviceId}>
+                    {friendlyCameraLabel(camera, selectedCameraId, index)}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                className={`flash-toggle ${flashOn ? 'on' : ''}`}
+                disabled={!flashSupported}
+                onClick={() => void toggleFlash()}
+              >
+                <span>{flashOn ? 'Desligar flash' : 'Ligar flash'}</span>
+                <span className="flash-state">{flashSupported ? (flashOn ? 'Ligado' : 'Desligado') : 'Indisponível'}</span>
+              </button>
+
+              {!flashSupported && (
+                <div className="field-help">O flash não é disponibilizado pelo navegador para esta câmera.</div>
+              )}
+            </div>
+          )}
+        </div>
+
         {loadingCameras && (
           <div className="scanner-status">Identificando câmeras…</div>
         )}
@@ -456,24 +527,8 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
         {error && <div className="scanner-error">{error}</div>}
       </div>
 
-      {cameras.length > 1 && (
-        <div className="camera-selector">
-          <label htmlFor="camera-select">Câmera</label>
-          <select
-            id="camera-select"
-            value={selectedCameraId}
-            onChange={(event) => void changeCamera(event.target.value)}
-          >
-            {cameras.map((camera, index) => (
-              <option key={camera.deviceId} value={camera.deviceId}>
-                {friendlyCameraLabel(camera, preferredId, index)}
-              </option>
-            ))}
-          </select>
-          <div className="field-help">
-            A principal 1× é usada por padrão. Sua escolha fica salva neste aparelho.
-          </div>
-        </div>
+      {cameraMenuOpen && cameras.length === 0 && (
+        <div className="camera-selector-fallback">Nenhuma câmera disponível para seleção.</div>
       )}
     </div>
   )
