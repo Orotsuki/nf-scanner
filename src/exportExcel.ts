@@ -5,6 +5,8 @@ export function exportToXlsx(notes: NotaFiscal[]): void {
   const rows = notes.map((note) => ({
     'Número da NF': note.numeroNF,
     'CNPJ do emitente': note.cnpjEmitente,
+    'Fornecedor': note.fornecedor,
+    'Valor': note.valor,
     'Chave de acesso': note.chaveAcesso,
     'Data/hora da leitura': formatDateForExcel(note.dataLeitura),
   }))
@@ -12,7 +14,9 @@ export function exportToXlsx(notes: NotaFiscal[]): void {
   const worksheet = XLSX.utils.json_to_sheet(rows)
   worksheet['!cols'] = [
     { wch: 16 },
-    { wch: 22 },
+    { wch: 18 },
+    { wch: 36 },
+    { wch: 16 },
     { wch: 50 },
     { wch: 23 },
   ]
