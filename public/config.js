@@ -1,6 +1,4 @@
 window.NF_SCANNER_CONFIG = {
-  // Preencha estes dois campos com os dados públicos do seu projeto Supabase.
-  // Use a chave "publishable" (sb_publishable_...), nunca a secret/service_role.
-  supabaseUrl: '',
-  supabasePublishableKey: '',
+  supabaseUrl: 'https://vopvxndgkzexhsfkxoov.supabase.co',
+  supabasePublishableKey: 'sb_publishable_Rn00SorGTK7I-i1vAQY7kQ_x4m9XXwf',
 }
