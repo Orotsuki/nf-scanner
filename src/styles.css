@@ -182,6 +182,15 @@ button:disabled { cursor: not-allowed; opacity: 0.48; }
 .summary-card { padding: 20px; }
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .section-heading.compact { align-items: center; margin-bottom: 14px; }
+.camera-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.camera-actions .btn {
+  white-space: nowrap;
+}
 h1, h2 { margin: 0; color: var(--navy); letter-spacing: -0.02em; }
 h1 { font-size: clamp(22px, 4vw, 30px); }
 h2 { font-size: 19px; }
@@ -292,6 +301,8 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   .scanner-panel { padding: 14px; }
   .section-heading { flex-direction: column; align-items: stretch; }
   .section-heading .btn { width: 100%; }
+  .camera-actions { width: 100%; }
+  .camera-actions .btn { flex: 1 1 0; }
   .scan-actions { grid-template-columns: 1fr; }
   .manual-row { flex-direction: column; }
   .search-wrap { min-width: 0; width: 100%; }
