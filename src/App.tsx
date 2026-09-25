@@ -465,7 +465,6 @@ export default function App() {
               <Scanner
                 enabled={scannerOpen}
                 onDetected={addNoteFromRaw}
-                scanTrigger={scanTrigger}
               />
             )}
 
