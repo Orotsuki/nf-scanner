@@ -8,7 +8,6 @@ export function extractAccessKey(raw: string): string | null {
   const decoded = decodeURIComponentSafely(raw).toUpperCase()
 
   // NFS-e padrão nacional: 50 posições.
-  // A inscrição federal pode conter letras nas versões atuais do leiaute.
   const nfseMatch = decoded.match(/[0-9]{9}[0-9A-Z]{14}[0-9]{27}/)
   if (nfseMatch?.[0]) return nfseMatch[0]
 
@@ -23,23 +22,6 @@ function decodeURIComponentSafely(value: string): string {
   } catch {
     return value
   }
-}
-
-export function formatCnpj(cnpj: string): string {
-  const digits = cleanDigits(cnpj)
-  if (digits.length !== 14) return cnpj
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12, 14)}`
-}
-
-function formatCpf(cpf: string): string {
-  const digits = cleanDigits(cpf)
-  if (digits.length !== 14) return cpf
-  const actual = digits.slice(-11)
-  return `${actual.slice(0, 3)}.${actual.slice(3, 6)}.${actual.slice(6, 9)}-${actual.slice(9, 11)}`
-}
-
-export function unformatCnpj(cnpj: string): string {
-  return cleanDigits(cnpj)
 }
 
 export function validateNFeKey(chave: string): { valid: boolean; reason?: string } {
@@ -107,12 +89,12 @@ export function parseNFe(raw: string): ParsedNFe | null {
     if (!validation.valid) return null
 
     const tipoInscricao = chave[8]
-    const inscricao = chave.slice(9, 23)
+    const inscricao = cleanDigits(chave.slice(9, 23))
     const numero = chave.slice(23, 36).replace(/^0+/, '') || '0'
 
     return {
       numeroNF: numero,
-      cnpjEmitente: tipoInscricao === '1' ? formatCpf(inscricao) : formatCnpj(inscricao),
+      cnpjEmitente: tipoInscricao === '1' ? inscricao.slice(-11) : inscricao,
       chaveAcesso: chave,
     }
   }
@@ -120,12 +102,12 @@ export function parseNFe(raw: string): ParsedNFe | null {
   const validation = validateNFeKey(chave)
   if (!validation.valid) return null
 
-  const cnpj = chave.slice(6, 20)
+  const cnpj = cleanDigits(chave.slice(6, 20))
   const numero = chave.slice(25, 34).replace(/^0+/, '') || '0'
 
   return {
     numeroNF: numero,
-    cnpjEmitente: formatCnpj(cnpj),
+    cnpjEmitente: cnpj,
     chaveAcesso: chave,
   }
 }
