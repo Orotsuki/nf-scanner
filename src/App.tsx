@@ -57,6 +57,13 @@ export default function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false)
   const [supplierManagementOpen, setSupplierManagementOpen] = useState(false)
   const [topMenuOpen, setTopMenuOpen] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('nf-scanner:dark-mode') === 'true'
+    } catch {
+      return false
+    }
+  })
   const [statusFilter, setStatusFilter] = useState<'Todos' | NotaStatus>('Todos')
 
   useEffect(() => {
@@ -155,6 +162,21 @@ export default function App() {
   useEffect(() => {
     saveNotes(notes)
   }, [notes])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nf-scanner:dark-mode', String(darkMode))
+    } catch {
+      // Preference persistence is optional.
+    }
+  }, [darkMode])
+
+  useEffect(() => {
+    document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light'
+    return () => {
+      document.documentElement.style.colorScheme = 'light'
+    }
+  }, [darkMode])
 
   useEffect(() => {
     const handler = (event: Event) => {
@@ -367,7 +389,7 @@ export default function App() {
     : 'A nuvem ainda não foi configurada neste projeto.'
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${darkMode ? 'dark-theme' : ''}`}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark" aria-hidden="true">NF</div>
@@ -464,6 +486,21 @@ export default function App() {
                     <span>
                       <strong>Fornecedores</strong>
                       <small>Consultar e atualizar cadastros</small>
+                    </span>
+                  </button>
+
+                  <button
+                    className="top-menu-item"
+                    type="button"
+                    onClick={() => setDarkMode((value) => !value)}
+                  >
+                    <span className="top-menu-icon">{darkMode ? '☀' : '☾'}</span>
+                    <span className="top-menu-text">
+                      <strong>Modo escuro</strong>
+                      <small>{darkMode ? 'Ativado' : 'Desativado'}</small>
+                    </span>
+                    <span className={`menu-switch ${darkMode ? 'on' : ''}`} aria-hidden="true">
+                      <span />
                     </span>
                   </button>
                 </div>
