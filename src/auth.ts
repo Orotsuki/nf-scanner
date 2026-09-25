@@ -42,12 +42,17 @@ export async function signInUsername(username: string, password: string) {
   return data.session
 }
 
-export async function signUpUsername(username: string, password: string) {
+export async function signUpUsername(username: string, password: string, registrationCode: string) {
   const normalized = normalizeUsername(username)
+  const normalizedRegistrationCode = registrationCode.trim().toUpperCase()
   validateUsername(normalized)
 
   if (password.length < 6 || password.length > 72) {
     throw new Error('A senha deve ter entre 6 e 72 caracteres.')
+  }
+
+  if (!normalizedRegistrationCode) {
+    throw new Error('Informe o código de cadastro.')
   }
 
   const endpoint = `${supabaseUrl}/functions/v1/username-auth`
@@ -61,6 +66,7 @@ export async function signUpUsername(username: string, password: string) {
     body: JSON.stringify({
       username: normalized,
       password,
+      registrationCode: normalizedRegistrationCode,
     }),
   })
 
