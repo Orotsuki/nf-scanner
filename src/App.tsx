@@ -454,52 +454,12 @@ export default function App() {
               </thead>
               <tbody>
                 {filteredNotes.map((note) => (
-                  <tr key={note.id}>
-                    <td><strong>{note.numeroNF}</strong></td>
-                    <td>{note.cnpjEmitente}</td>
-                    <td>
-                      <input
-                        className={`editable-cell-input ${note.fornecedor ? '' : 'pending'}`}
-                        value={note.fornecedor}
-                        placeholder="Cadastrar fornecedor"
-                        aria-label={`Fornecedor da NF ${note.numeroNF}`}
-                        onChange={(event) => {
-                          const value = event.target.value
-                          setNotes((current) => current.map((item) =>
-                            item.id === note.id ? { ...item, fornecedor: value } : item,
-                          ))
-                        }}
-                        onBlur={(event) => {
-                          void persistNote({ ...note, fornecedor: event.currentTarget.value.trim() })
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="editable-cell-input amount-input"
-                        inputMode="decimal"
-                        value={note.valor == null ? '' : formatMoney(note.valor)}
-                        placeholder="0,00"
-                        aria-label={`Valor da NF ${note.numeroNF}`}
-                        onChange={(event) => {
-                          const value = event.target.value
-                          const parsedValue = parseMoney(value)
-                          setNotes((current) => current.map((item) =>
-                            item.id === note.id ? { ...item, valor: parsedValue } : item,
-                          ))
-                        }}
-                        onBlur={(event) => {
-                          const parsedValue = parseMoney(event.currentTarget.value)
-                          void persistNote({ ...note, valor: parsedValue })
-                        }}
-                      />
-                    </td>
-                    <td><code>{note.chaveAcesso}</code></td>
-                    <td>{formatDate(note.dataLeitura)}</td>
-                    <td className="action-cell">
-                      <button className="delete-btn" onClick={() => void removeNote(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
-                    </td>
-                  </tr>
+                  <EditableNoteRow
+                    key={note.id}
+                    note={note}
+                    onSave={persistNote}
+                    onDelete={removeNote}
+                  />
                 ))}
                 {!filteredNotes.length && (
                   <tr>
@@ -516,6 +476,76 @@ export default function App() {
 
       {toast && <div className={`toast ${toast.type}`}>{toast.text}</div>}
     </div>
+  )
+}
+
+function EditableNoteRow({
+  note,
+  onSave,
+  onDelete,
+}: {
+  note: NotaFiscal
+  onSave: (note: NotaFiscal) => Promise<void>
+  onDelete: (id: string) => Promise<void>
+}) {
+  const [fornecedor, setFornecedor] = useState(note.fornecedor)
+  const [valor, setValor] = useState(note.valor == null ? '' : formatMoney(note.valor))
+
+  useEffect(() => {
+    setFornecedor(note.fornecedor)
+  }, [note.fornecedor])
+
+  useEffect(() => {
+    setValor(note.valor == null ? '' : formatMoney(note.valor))
+  }, [note.valor])
+
+  return (
+    <tr>
+      <td><strong>{note.numeroNF}</strong></td>
+      <td>{note.cnpjEmitente}</td>
+      <td>
+        <input
+          className={`editable-cell-input ${fornecedor ? '' : 'pending'}`}
+          value={fornecedor}
+          placeholder="Cadastrar fornecedor"
+          aria-label={`Fornecedor da NF ${note.numeroNF}`}
+          onChange={(event) => setFornecedor(event.target.value)}
+          onBlur={() => {
+            const trimmed = fornecedor.trim()
+            if (trimmed !== note.fornecedor) {
+              void onSave({ ...note, fornecedor: trimmed })
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+          }}
+        />
+      </td>
+      <td>
+        <input
+          className="editable-cell-input amount-input"
+          inputMode="decimal"
+          value={valor}
+          placeholder="0,00"
+          aria-label={`Valor da NF ${note.numeroNF}`}
+          onChange={(event) => setValor(event.target.value)}
+          onBlur={() => {
+            const parsedValue = parseMoney(valor)
+            if (parsedValue !== note.valor) {
+              void onSave({ ...note, valor: parsedValue })
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur()
+          }}
+        />
+      </td>
+      <td><code>{note.chaveAcesso}</code></td>
+      <td>{formatDate(note.dataLeitura)}</td>
+      <td className="action-cell">
+        <button className="delete-btn" onClick={() => void onDelete(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
+      </td>
+    </tr>
   )
 }
 
