@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
-import { exportToXlsx } from './exportExcel'
 import { loadNotes, saveNotes } from './storage'
-import type { NotaFiscal } from './types'
+import type { NotaFiscal, NotaStatus } from './types'
 import {
   deleteAllCloudNotes,
   deleteCloudNote,
@@ -53,8 +52,12 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'connecting' : 'local')
   const [supplierMap, setSupplierMap] = useState<Record<string, string>>({})
+  const [supplierRecords, setSupplierRecords] = useState<Array<{ id: string; cnpj: string; nome: string }>>([])
   const [userManagementOpen, setUserManagementOpen] = useState(false)
+  const [dashboardOpen, setDashboardOpen] = useState(false)
+  const [supplierManagementOpen, setSupplierManagementOpen] = useState(false)
   const [topMenuOpen, setTopMenuOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'Todos' | NotaStatus>('Todos')
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -80,6 +83,7 @@ export default function App() {
       if (!nextSession) {
         setNotes(loadNotes())
         setSupplierMap({})
+        setSupplierRecords([])
         setSyncStatus('local')
       }
     })
@@ -107,6 +111,7 @@ export default function App() {
 
         setNotes(cloudNotes)
         setSupplierMap(toSupplierMap(suppliers))
+        setSupplierRecords(suppliers)
         setSyncStatus('online')
       } catch {
         if (!cancelled) setSyncStatus('offline')
@@ -175,7 +180,7 @@ export default function App() {
     }
 
     if (notes.some((note) => note.chaveAcesso === parsed.chaveAcesso)) {
-      setToast({ type: 'warning', text: `NF ${parsed.numeroNF} já foi lida.` })
+      setToast({ type: 'warning', text: `NF ${parsed.numeroNF} já está cadastrada.` })
       return
     }
 
@@ -201,7 +206,9 @@ export default function App() {
       id: crypto.randomUUID(),
       fornecedor,
       valor: null,
-      dataLeitura: new Date().toISOString(),
+      dataCadastro: new Date().toISOString(),
+      dataControladoria: null,
+      status: 'Pendente',
     }
 
     setNotes((current) => [note, ...current])
@@ -235,16 +242,21 @@ export default function App() {
   const filteredNotes = useMemo(() => {
     const q = search.trim().toLowerCase()
 
-    if (!q) return notes
+    return notes.filter((note) => {
+      const matchesStatus = statusFilter === 'Todos' || note.status === statusFilter
+      if (!matchesStatus) return false
 
-    return notes.filter((note) =>
-      note.numeroNF.toLowerCase().includes(q) ||
-      note.cnpjEmitente.toLowerCase().includes(q) ||
-      note.fornecedor.toLowerCase().includes(q) ||
-      String(note.valor ?? '').includes(q) ||
-      note.chaveAcesso.includes(q),
-    )
-  }, [notes, search])
+      if (!q) return true
+
+      return (
+        note.numeroNF.toLowerCase().includes(q) ||
+        note.cnpjEmitente.toLowerCase().includes(q) ||
+        note.fornecedor.toLowerCase().includes(q) ||
+        String(note.valor ?? '').includes(q) ||
+        note.chaveAcesso.includes(q)
+      )
+    })
+  }, [notes, search, statusFilter])
 
   async function persistNote(note: NotaFiscal): Promise<void> {
     setNotes((current) => current.map((item) => item.id === note.id ? note : item))
@@ -347,6 +359,7 @@ export default function App() {
     offline: 'Sem conexão com a nuvem',
   }[syncStatus]
 
+  const supplierMapEntries = () => supplierRecords
   const username = String(session?.user.user_metadata?.username ?? 'usuário')
   const isAdmin = session?.user.app_metadata?.role === 'admin'
   const summaryFoot = session
@@ -423,6 +436,36 @@ export default function App() {
                       </span>
                     </button>
                   )}
+
+                  <button
+                    className="top-menu-item"
+                    type="button"
+                    onClick={() => {
+                      setTopMenuOpen(false)
+                      setDashboardOpen(true)
+                    }}
+                  >
+                    <span className="top-menu-icon">▥</span>
+                    <span>
+                      <strong>Dashboard</strong>
+                      <small>Resumo das notas cadastradas</small>
+                    </span>
+                  </button>
+
+                  <button
+                    className="top-menu-item"
+                    type="button"
+                    onClick={() => {
+                      setTopMenuOpen(false)
+                      setSupplierManagementOpen(true)
+                    }}
+                  >
+                    <span className="top-menu-icon">▤</span>
+                    <span>
+                      <strong>Fornecedores</strong>
+                      <small>Consultar e atualizar cadastros</small>
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
@@ -489,11 +532,10 @@ export default function App() {
           </div>
 
           <aside className="summary-card">
-            <div className="summary-label">Documentos armazenados</div>
+            <div className="summary-label">Notas fiscais cadastradas</div>
             <div className="summary-number">{notes.length}</div>
             <div className="summary-foot">{summaryFoot}</div>
             <div className="summary-actions">
-              <button className="btn primary full" disabled={!notes.length} onClick={() => exportToXlsx(notes)}>Exportar XLSX</button>
               <button className="btn ghost full" disabled={!notes.length} onClick={() => void clearNotes()}>Limpar tudo</button>
             </div>
           </aside>
@@ -502,12 +544,27 @@ export default function App() {
         <section className="list-panel">
           <div className="section-heading compact">
             <div>
-              <h2>Notas lidas</h2>
+              <h2>Notas fiscais cadastradas</h2>
               <p>{filteredNotes.length} de {notes.length} registros</p>
             </div>
-            <div className="search-wrap">
-              <span>⌕</span>
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar NF, CNPJ, fornecedor ou chave" />
+            <div className="list-tools">
+              <div className="filter-wrap">
+                <label htmlFor="status-filter">Status</label>
+                <select
+                  id="status-filter"
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as 'Todos' | NotaStatus)}
+                >
+                  <option>Todos</option>
+                  <option>Pendente</option>
+                  <option>Conferida</option>
+                  <option>Finalizada</option>
+                </select>
+              </div>
+              <div className="search-wrap">
+                <span>⌕</span>
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar NF, CNPJ, fornecedor ou chave" />
+              </div>
             </div>
           </div>
 
@@ -519,6 +576,9 @@ export default function App() {
                   <th>CNPJ do emitente</th>
                   <th>Fornecedor</th>
                   <th>Valor</th>
+                  <th>Status</th>
+                  <th>Cadastro</th>
+                  <th>Controladoria</th>
                   <th>Chave de acesso</th>
                   <th aria-label="Ações" />
                 </tr>
@@ -534,7 +594,7 @@ export default function App() {
                 ))}
                 {!filteredNotes.length && (
                   <tr>
-                    <td colSpan={6} className="empty-row">
+                    <td colSpan={9} className="empty-row">
                       {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi lida ainda.'}
                     </td>
                   </tr>
@@ -545,11 +605,211 @@ export default function App() {
         </section>
       </main>
 
+      {dashboardOpen && (
+        <DashboardModal notes={notes} onClose={() => setDashboardOpen(false)} />
+      )}
+
+      {supplierManagementOpen && (
+        <SupplierManagement
+          suppliers={supplierRecords}
+          onSave={async (cnpj, nome) => {
+            await upsertSupplier(cnpj, nome)
+            setSupplierMap((current) => ({ ...current, [cnpj]: nome }))
+            setToast({ type: 'success', text: 'Fornecedor atualizado.' })
+          }}
+          onClose={() => setSupplierManagementOpen(false)}
+        />
+      )}
+
       {toast && <div className={`toast ${toast.type}`}>{toast.text}</div>}
 
       {userManagementOpen && isAdmin && (
         <UserManagement onClose={() => setUserManagementOpen(false)} currentUserId={session.user.id} />
       )}
+    </div>
+  )
+}
+
+function DashboardModal({
+  notes,
+  onClose,
+}: {
+  notes: NotaFiscal[]
+  onClose: () => void
+}) {
+  const totals = notes.reduce(
+    (acc, note) => {
+      acc.total += 1
+      if (note.status === 'Pendente') acc.pending += 1
+      if (note.status === 'Conferida') acc.checked += 1
+      if (note.status === 'Finalizada') acc.finalized += 1
+      if (typeof note.valor === 'number') acc.value += note.valor
+      return acc
+    },
+    { total: 0, pending: 0, checked: 0, finalized: 0, value: 0 },
+  )
+
+  return (
+    <div className="modal-backdrop">
+      <div className="dashboard-modal">
+        <div className="user-management-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Resumo das notas fiscais cadastradas.</p>
+          </div>
+          <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
+        </div>
+
+        <div className="dashboard-grid">
+          <div className="dashboard-card">
+            <span>Notas cadastradas</span>
+            <strong>{totals.total}</strong>
+          </div>
+          <div className="dashboard-card pending">
+            <span>Pendentes</span>
+            <strong>{totals.pending}</strong>
+          </div>
+          <div className="dashboard-card checked">
+            <span>Conferidas</span>
+            <strong>{totals.checked}</strong>
+          </div>
+          <div className="dashboard-card finalized">
+            <span>Finalizadas</span>
+            <strong>{totals.finalized}</strong>
+          </div>
+        </div>
+
+        <div className="dashboard-value">
+          <span>Valor total cadastrado</span>
+          <strong>{formatMoney(totals.value)}</strong>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SupplierManagement({
+  onClose,
+  suppliers,
+  onSave,
+}: {
+  onClose: () => void
+  suppliers: Array<{ id: string; cnpj: string; nome: string }>
+  onSave: (cnpj: string, nome: string) => Promise<void>
+}) {
+  const [supplierRows, setSupplierRows] = useState(suppliers)
+  const [addOpen, setAddOpen] = useState(false)
+  const [newCnpj, setNewCnpj] = useState('')
+  const [newName, setNewName] = useState('')
+  const [searchSupplier, setSearchSupplier] = useState('')
+
+  useEffect(() => setSupplierRows(suppliers), [suppliers])
+
+  const filtered = supplierRows.filter((supplier) => {
+    const q = searchSupplier.trim().toLowerCase()
+    if (!q) return true
+    return supplier.cnpj.includes(q.replace(/\D/g, '')) || supplier.nome.toLowerCase().includes(q)
+  })
+
+  async function saveNew() {
+    const cnpj = newCnpj.replace(/\D/g, '')
+    if (cnpj.length < 11 || cnpj.length > 14 || !newName.trim()) return
+    await onSave(cnpj, newName.trim())
+    setSupplierRows((current) => {
+      const existing = current.find((item) => item.cnpj === cnpj)
+      if (existing) {
+        return current.map((item) => item.cnpj === cnpj ? { ...item, nome: newName.trim() } : item)
+      }
+      return [...current, { id: crypto.randomUUID(), cnpj, nome: newName.trim() }].sort((a, b) => a.nome.localeCompare(b.nome))
+    })
+    setNewCnpj('')
+    setNewName('')
+    setAddOpen(false)
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <div className="user-management supplier-management">
+        <div className="user-management-header">
+          <div>
+            <h2>Fornecedores</h2>
+            <p>Base de fornecedores associada ao CNPJ.</p>
+          </div>
+          <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
+        </div>
+
+        <button className="btn primary add-user-toggle" type="button" onClick={() => setAddOpen((value) => !value)}>
+          {addOpen ? 'Fechar cadastro' : 'Adicionar fornecedor'}
+        </button>
+
+        {addOpen && (
+          <div className="user-create-box">
+            <div className="user-create-grid supplier-create-grid">
+              <input
+                value={newCnpj}
+                onChange={(event) => setNewCnpj(event.target.value)}
+                inputMode="numeric"
+                placeholder="CNPJ somente números"
+              />
+              <input
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                placeholder="Nome do fornecedor"
+              />
+              <button className="btn primary" onClick={() => void saveNew()}>
+                Salvar
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="supplier-toolbar">
+          <div className="user-list-title">Fornecedores cadastrados:</div>
+          <div className="search-wrap supplier-search">
+            <span>⌕</span>
+            <input value={searchSupplier} onChange={(event) => setSearchSupplier(event.target.value)} placeholder="Pesquisar fornecedor ou CNPJ" />
+          </div>
+        </div>
+
+        <div className="supplier-list">
+          {filtered.map((supplier) => (
+            <SupplierRow
+              key={supplier.id}
+              supplier={supplier}
+              onSave={onSave}
+            />
+          ))}
+          {!filtered.length && <div className="user-empty">Nenhum fornecedor encontrado.</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SupplierRow({
+  supplier,
+  onSave,
+}: {
+  supplier: { id: string; cnpj: string; nome: string }
+  onSave: (cnpj: string, nome: string) => Promise<void>
+}) {
+  const [nome, setNome] = useState(supplier.nome)
+
+  useEffect(() => setNome(supplier.nome), [supplier.nome])
+
+  return (
+    <div className="supplier-row">
+      <code>{supplier.cnpj}</code>
+      <input
+        className="editable-cell-input"
+        value={nome}
+        onChange={(event) => setNome(event.target.value)}
+        onBlur={() => {
+          if (nome.trim() !== supplier.nome) {
+            void onSave(supplier.cnpj, nome.trim())
+          }
+        }}
+      />
     </div>
   )
 }
@@ -615,8 +875,33 @@ function EditableNoteRow({
           }}
         />
       </td>
+      <td>
+        <select
+          className={`editable-cell-select status-${note.status.toLowerCase()}`}
+          value={note.status}
+          onChange={(event) => void onSave({ ...note, status: event.target.value as NotaStatus })}
+          aria-label={`Status da NF ${note.numeroNF}`}
+        >
+          <option>Pendente</option>
+          <option>Conferida</option>
+          <option>Finalizada</option>
+        </select>
+      </td>
+      <td className="date-cell">{formatDateTime(note.dataCadastro)}</td>
+      <td>
+        <input
+          className="editable-cell-input control-date-input"
+          type="date"
+          value={note.dataControladoria ?? ''}
+          aria-label={`Data de entrega à controladoria da NF ${note.numeroNF}`}
+          onChange={(event) => void onSave({
+            ...note,
+            dataControladoria: event.target.value || null,
+            status: event.target.value && note.status === 'Conferida' ? 'Finalizada' : note.status,
+          })}
+        />
+      </td>
       <td><code>{note.chaveAcesso}</code></td>
-      <td>{formatDate(note.dataLeitura)}</td>
       <td className="action-cell">
         <button className="delete-btn" onClick={() => void onDelete(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
       </td>
@@ -976,6 +1261,12 @@ function getAuthErrorMessage(cause: unknown): string {
 }
 
 function formatDate(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+  }).format(new Date(value))
+}
+
+function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat('pt-BR', {
     dateStyle: 'short',
     timeStyle: 'short',
