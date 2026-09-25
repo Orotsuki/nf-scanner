@@ -30,15 +30,22 @@ import {
   type ManagedUser,
 } from './adminUsers'
 
-const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
-
 type SyncStatus = 'local' | 'connecting' | 'online' | 'offline'
+
+function isDesktopDevice(): boolean {
+  if (typeof window === 'undefined') return false
+
+  return (
+    window.matchMedia('(min-width: 981px)').matches &&
+    window.matchMedia('(pointer: fine)').matches
+  )
+}
 
 export default function App() {
   const [notes, setNotes] = useState<NotaFiscal[]>(() => loadNotes())
-  const [scannerOpen, setScannerOpen] = useState(true)
+  const [scannerOpen, setScannerOpen] = useState(() => !isDesktopDevice())
   const [scanTrigger, setScanTrigger] = useState(0)
-  const [manualOpen, setManualOpen] = useState(false)
+  const [manualOpen, setManualOpen] = useState(() => isDesktopDevice())
   const [manualValue, setManualValue] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [search, setSearch] = useState('')
@@ -373,9 +380,6 @@ export default function App() {
             </div>
           )}
           {session && (
-            <button className="icon-btn" onClick={() => void handleSignOut()} aria-label="Sair" title="Sair">↪</button>
-          )}
-          {session && (
             <div className="top-menu-wrap">
               <button
                 className="icon-btn menu-trigger"
@@ -392,8 +396,21 @@ export default function App() {
               {topMenuOpen && (
                 <div className="top-menu" role="menu">
                   <div className="top-menu-user">
-                    <strong>{username}</strong>
-                    <span>{isAdmin ? 'Administrador' : 'Usuário'}</span>
+                    <div className="top-menu-user-info">
+                      <strong>{username}</strong>
+                      <span>{isAdmin ? 'Administrador' : 'Usuário'}</span>
+                    </div>
+
+                    <button
+                      className="top-menu-signout"
+                      type="button"
+                      onClick={() => {
+                        setTopMenuOpen(false)
+                        void handleSignOut()
+                      }}
+                    >
+                      SAIR
+                    </button>
                   </div>
 
                   {isAdmin && (
@@ -443,7 +460,6 @@ export default function App() {
             <div className="scan-actions">
               <button className="btn primary" onClick={requestScan}>Ler código</button>
               <button className="btn secondary" onClick={() => setManualOpen(true)}>Digitar chave</button>
-              <button className="btn ghost" onClick={() => void addNoteFromRaw(SAMPLE_KEY)}>Testar com exemplo</button>
             </div>
 
             {manualOpen && (
@@ -498,7 +514,6 @@ export default function App() {
                   <th>Fornecedor</th>
                   <th>Valor</th>
                   <th>Chave de acesso</th>
-                  <th>Leitura</th>
                   <th aria-label="Ações" />
                 </tr>
               </thead>
@@ -513,7 +528,7 @@ export default function App() {
                 ))}
                 {!filteredNotes.length && (
                   <tr>
-                    <td colSpan={7} className="empty-row">
+                    <td colSpan={6} className="empty-row">
                       {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi lida ainda.'}
                     </td>
                   </tr>
@@ -689,8 +704,10 @@ function UserManagement({
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [addUserOpen, setAddUserOpen] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [resetOpen, setResetOpen] = useState<string | null>(null)
   const [resetValues, setResetValues] = useState<Record<string, string>>({})
 
   const loadUsers = useCallback(async () => {
@@ -729,6 +746,7 @@ function UserManagement({
       await createManagedUser(username, newPassword)
       setNewUsername('')
       setNewPassword('')
+      setAddUserOpen(false)
       await loadUsers()
     } catch (cause: unknown) {
       setMessage(cause instanceof Error ? cause.message : 'Não foi possível criar o usuário.')
@@ -751,6 +769,7 @@ function UserManagement({
     try {
       await resetManagedUserPassword(user.id, password)
       setResetValues((current) => ({ ...current, [user.id]: '' }))
+      setResetOpen(null)
       setMessage(`Senha de ${user.username} redefinida.`)
     } catch (cause: unknown) {
       setMessage(cause instanceof Error ? cause.message : 'Não foi possível redefinir a senha.')
@@ -788,30 +807,45 @@ function UserManagement({
           <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <div className="user-create-box">
-          <div className="user-create-title">Adicionar usuário</div>
-          <div className="user-create-grid">
-            <input
-              value={newUsername}
-              onChange={(event) => setNewUsername(event.target.value)}
-              placeholder="Usuário"
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-            <input
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              type="password"
-              placeholder="Senha inicial"
-              autoComplete="new-password"
-            />
-            <button className="btn primary" disabled={busy} onClick={() => void handleCreate()}>
-              Adicionar
-            </button>
+        <button
+          className="btn primary add-user-toggle"
+          type="button"
+          onClick={() => {
+            setAddUserOpen((value) => !value)
+            setMessage(null)
+          }}
+        >
+          {addUserOpen ? 'Fechar cadastro' : 'Adicionar usuário'}
+        </button>
+
+        {addUserOpen && (
+          <div className="user-create-box">
+            <div className="user-create-grid">
+              <input
+                value={newUsername}
+                onChange={(event) => setNewUsername(event.target.value)}
+                placeholder="Usuário"
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoComplete="username"
+              />
+              <input
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                type="password"
+                placeholder="Senha inicial"
+                autoComplete="new-password"
+              />
+              <button className="btn primary" disabled={busy} onClick={() => void handleCreate()}>
+                Adicionar
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {message && <div className="auth-message error">{message}</div>}
+
+        <div className="user-list-title">Lista de usuários:</div>
 
         <div className="user-list">
           {loading ? (
@@ -827,33 +861,58 @@ function UserManagement({
                 </div>
               </div>
 
-              <div className="user-reset">
-                <input
-                  type="password"
-                  value={resetValues[user.id] ?? ''}
-                  onChange={(event) => setResetValues((current) => ({
-                    ...current,
-                    [user.id]: event.target.value,
-                  }))}
-                  placeholder="Nova senha"
-                  autoComplete="new-password"
-                />
+              <div className="user-actions">
+                {resetOpen === user.id ? (
+                  <div className="user-reset">
+                    <input
+                      type="password"
+                      value={resetValues[user.id] ?? ''}
+                      onChange={(event) => setResetValues((current) => ({
+                        ...current,
+                        [user.id]: event.target.value,
+                      }))}
+                      placeholder="Nova senha"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      className="btn secondary"
+                      disabled={busy || !(resetValues[user.id] ?? '')}
+                      onClick={() => void handleReset(user)}
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      className="btn ghost"
+                      disabled={busy}
+                      onClick={() => {
+                        setResetOpen(null)
+                        setResetValues((current) => ({ ...current, [user.id]: '' }))
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="btn secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      setResetOpen(user.id)
+                      setMessage(null)
+                    }}
+                  >
+                    Redefinir senha
+                  </button>
+                )}
+
                 <button
-                  className="btn secondary"
-                  disabled={busy || !(resetValues[user.id] ?? '')}
-                  onClick={() => void handleReset(user)}
+                  className="btn danger"
+                  disabled={busy || user.id === currentUserId || user.role === 'admin'}
+                  onClick={() => void handleDelete(user)}
                 >
-                  Redefinir
+                  Remover
                 </button>
               </div>
-
-              <button
-                className="btn danger"
-                disabled={busy || user.id === currentUserId || user.role === 'admin'}
-                onClick={() => void handleDelete(user)}
-              >
-                Remover
-              </button>
             </div>
           ))}
 
