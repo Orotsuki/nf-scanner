@@ -1,11 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
 import { exportToXlsx } from './exportExcel'
 import { loadNotes, saveNotes } from './storage'
 import type { NotaFiscal } from './types'
+import {
+  deleteAllCloudNotes,
+  deleteCloudNote,
+  fetchCloudNotes,
+  fetchSuppliers,
+  findSupplierByCnpj,
+  getSession,
+  isSupabaseConfigured,
+  mergeLocalNotesIntoCloud,
+  signIn,
+  signOut,
+  signUp,
+  subscribeToAuthChanges,
+  subscribeToCloudChanges,
+  updateCloudNote,
+  upsertCloudNote,
+  upsertSupplier,
+} from './cloud'
 
 const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
+
+type SyncStatus = 'local' | 'connecting' | 'online' | 'offline'
 
 export default function App() {
   const [notes, setNotes] = useState<NotaFiscal[]>(() => loadNotes())
@@ -16,6 +37,101 @@ export default function App() {
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [search, setSearch] = useState('')
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'connecting' : 'local')
+  const [supplierMap, setSupplierMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setAuthLoading(false)
+      return
+    }
+
+    let active = true
+
+    void getSession()
+      .then((currentSession) => {
+        if (active) setSession(currentSession)
+      })
+      .catch(() => {
+        if (active) setSession(null)
+      })
+      .finally(() => {
+        if (active) setAuthLoading(false)
+      })
+
+    const unsubscribe = subscribeToAuthChanges((nextSession) => {
+      setSession(nextSession)
+      if (!nextSession) {
+        setNotes(loadNotes())
+        setSupplierMap({})
+        setSyncStatus('local')
+      }
+    })
+
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!session || !isSupabaseConfigured) return
+
+    let cancelled = false
+    let unsubscribe = () => undefined
+
+    const refreshFromCloud = async () => {
+      try {
+        const [cloudNotes, suppliers] = await Promise.all([
+          fetchCloudNotes(),
+          fetchSuppliers(),
+        ])
+
+        if (cancelled) return
+
+        setNotes(cloudNotes)
+        setSupplierMap(toSupplierMap(suppliers))
+        setSyncStatus('online')
+      } catch {
+        if (!cancelled) setSyncStatus('offline')
+      }
+    }
+
+    const hydrate = async () => {
+      setSyncStatus('connecting')
+
+      try {
+        await mergeLocalNotesIntoCloud(loadNotes())
+
+        if (cancelled) return
+
+        await refreshFromCloud()
+
+        if (cancelled) return
+
+        unsubscribe = subscribeToCloudChanges(session.user.id, () => {
+          void refreshFromCloud()
+        })
+      } catch {
+        if (!cancelled) {
+          setSyncStatus('offline')
+          setToast({
+            type: 'warning',
+            text: 'Não foi possível sincronizar agora. Os registros continuam neste aparelho.',
+          })
+        }
+      }
+    }
+
+    void hydrate()
+
+    return () => {
+      cancelled = true
+      unsubscribe()
+    }
+  }, [session?.user.id])
 
   useEffect(() => {
     saveNotes(notes)
@@ -32,12 +148,13 @@ export default function App() {
 
   useEffect(() => {
     if (!toast) return
-    const timer = window.setTimeout(() => setToast(null), 2600)
+    const timer = window.setTimeout(() => setToast(null), 3000)
     return () => window.clearTimeout(timer)
   }, [toast])
 
-  const addNoteFromRaw = useCallback((raw: string) => {
+  const addNoteFromRaw = useCallback(async (raw: string) => {
     const parsed = parseNFe(raw)
+
     if (!parsed) {
       setToast({ type: 'error', text: explainNFeError(raw) })
       return
@@ -48,41 +165,147 @@ export default function App() {
       return
     }
 
+    let fornecedor = supplierMap[parsed.cnpjEmitente] ?? ''
+
+    if (!fornecedor && session && isSupabaseConfigured) {
+      try {
+        const knownSupplier = await findSupplierByCnpj(parsed.cnpjEmitente)
+        if (knownSupplier) {
+          fornecedor = knownSupplier.nome
+          setSupplierMap((current) => ({
+            ...current,
+            [parsed.cnpjEmitente]: knownSupplier.nome,
+          }))
+        }
+      } catch {
+        // A consulta de fornecedor é opcional; a leitura continua normalmente.
+      }
+    }
+
     const note: NotaFiscal = {
       ...parsed,
       id: crypto.randomUUID(),
+      fornecedor,
+      valor: null,
       dataLeitura: new Date().toISOString(),
     }
 
     setNotes((current) => [note, ...current])
-    setToast({ type: 'success', text: `NF ${parsed.numeroNF} adicionada.` })
+
+    if (session && isSupabaseConfigured) {
+      try {
+        await upsertCloudNote(note)
+        setSyncStatus('online')
+      } catch {
+        setSyncStatus('offline')
+        setToast({
+          type: 'warning',
+          text: `NF ${parsed.numeroNF} salva neste aparelho, mas não foi sincronizada ainda.`,
+        })
+      }
+    }
+
+    if (fornecedor) {
+      setToast({ type: 'success', text: `NF ${parsed.numeroNF} adicionada.` })
+    } else {
+      setToast({ type: 'success', text: `NF ${parsed.numeroNF} adicionada. Cadastre o fornecedor nesta linha.` })
+    }
+
     setManualValue('')
     setManualOpen(false)
 
     if ('vibrate' in navigator) navigator.vibrate?.(70)
     playBeep()
-  }, [notes])
+  }, [notes, session, supplierMap])
 
   const filteredNotes = useMemo(() => {
     const q = search.trim().toLowerCase()
+
     if (!q) return notes
+
     return notes.filter((note) =>
       note.numeroNF.toLowerCase().includes(q) ||
       note.cnpjEmitente.toLowerCase().includes(q) ||
+      note.fornecedor.toLowerCase().includes(q) ||
+      String(note.valor ?? '').includes(q) ||
       note.chaveAcesso.includes(q),
     )
   }, [notes, search])
 
-  function removeNote(id: string) {
-    setNotes((current) => current.filter((note) => note.id !== id))
+  async function persistNote(note: NotaFiscal): Promise<void> {
+    setNotes((current) => current.map((item) => item.id === note.id ? note : item))
+
+    if (!session || !isSupabaseConfigured) return
+
+    try {
+      if (note.fornecedor.trim()) {
+        await upsertSupplier(note.cnpjEmitente, note.fornecedor)
+        setSupplierMap((current) => ({
+          ...current,
+          [note.cnpjEmitente]: note.fornecedor.trim(),
+        }))
+      }
+
+      await updateCloudNote(note)
+      setSyncStatus('online')
+    } catch {
+      setSyncStatus('offline')
+      setToast({
+        type: 'warning',
+        text: 'A alteração ficou salva neste aparelho, mas não foi sincronizada.',
+      })
+    }
   }
 
-  function clearNotes() {
-    if (!notes.length) return
-    if (window.confirm('Excluir todas as notas armazenadas neste dispositivo?')) {
-      setNotes([])
-      setToast({ type: 'success', text: 'Lista limpa.' })
+  async function removeNote(id: string) {
+    const note = notes.find((item) => item.id === id)
+    if (!note) return
+
+    if (session && isSupabaseConfigured) {
+      try {
+        await deleteCloudNote(id)
+      } catch {
+        setSyncStatus('offline')
+        setToast({ type: 'error', text: 'Não foi possível excluir a nota da nuvem.' })
+        return
+      }
     }
+
+    setNotes((current) => current.filter((item) => item.id !== id))
+  }
+
+  async function clearNotes() {
+    if (!notes.length) return
+
+    if (!window.confirm('Excluir todas as notas armazenadas?')) return
+
+    if (session && isSupabaseConfigured) {
+      try {
+        await deleteAllCloudNotes()
+      } catch {
+        setSyncStatus('offline')
+        setToast({ type: 'error', text: 'Não foi possível limpar as notas da nuvem.' })
+        return
+      }
+    }
+
+    setNotes([])
+    setToast({ type: 'success', text: 'Lista limpa.' })
+  }
+
+  async function handleSignOut() {
+    try {
+      if (session && isSupabaseConfigured) {
+        await signOut()
+      }
+    } catch {
+      setToast({ type: 'error', text: 'Não foi possível sair agora.' })
+    }
+  }
+
+  function requestScan() {
+    setScannerOpen(true)
+    setScanTrigger((value) => value + 1)
   }
 
   async function installApp() {
@@ -92,10 +315,32 @@ export default function App() {
     setInstallPrompt(null)
   }
 
-  function requestScan() {
-    setScannerOpen(true)
-    setScanTrigger((value) => value + 1)
+  if (isSupabaseConfigured && authLoading) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <div className="brand-mark large">NF</div>
+          <h1>NF Scanner</h1>
+          <p>Verificando acesso…</p>
+        </div>
+      </div>
+    )
   }
+
+  if (isSupabaseConfigured && !session) {
+    return <AuthScreen />
+  }
+
+  const syncLabel = {
+    local: 'Somente neste aparelho',
+    connecting: 'Sincronizando…',
+    online: 'Sincronizado',
+    offline: 'Sem conexão com a nuvem',
+  }[syncStatus]
+
+  const summaryFoot = session
+    ? `Acesso: ${session.user.email ?? 'usuário'} • ${syncLabel}`
+    : 'A nuvem ainda não foi configurada neste projeto.'
 
   return (
     <div className="app-shell">
@@ -110,6 +355,15 @@ export default function App() {
         <div className="top-actions">
           {installPrompt && (
             <button className="btn ghost" onClick={installApp}>Instalar</button>
+          )}
+          {session && (
+            <div className={`sync-badge ${syncStatus}`} title={session.user.email ?? undefined}>
+              <span className="sync-dot" />
+              <span>{syncLabel}</span>
+            </div>
+          )}
+          {session && (
+            <button className="icon-btn" onClick={() => void handleSignOut()} aria-label="Sair">↪</button>
           )}
           <button className="icon-btn" onClick={() => setManualOpen((value) => !value)} aria-label="Abrir digitação manual">⌨</button>
         </div>
@@ -139,7 +393,7 @@ export default function App() {
             <div className="scan-actions">
               <button className="btn primary" onClick={requestScan}>Ler código</button>
               <button className="btn secondary" onClick={() => setManualOpen(true)}>Digitar chave</button>
-              <button className="btn ghost" onClick={() => addNoteFromRaw(SAMPLE_KEY)}>Testar com exemplo</button>
+              <button className="btn ghost" onClick={() => void addNoteFromRaw(SAMPLE_KEY)}>Testar com exemplo</button>
             </div>
 
             {manualOpen && (
@@ -153,9 +407,9 @@ export default function App() {
                     value={manualValue}
                     maxLength={54}
                     onChange={(event) => setManualValue(event.target.value)}
-                    placeholder="Digite ou cole a chave de 44 dígitos"
+                    placeholder="Digite ou cole a chave de 44 dígitos ou 50 posições"
                   />
-                  <button className="btn primary" onClick={() => addNoteFromRaw(manualValue)}>Adicionar</button>
+                  <button className="btn primary" onClick={() => void addNoteFromRaw(manualValue)}>Adicionar</button>
                 </div>
                 <div className="field-help">Também aceita chave com espaços ou formatação.</div>
               </div>
@@ -165,10 +419,10 @@ export default function App() {
           <aside className="summary-card">
             <div className="summary-label">Documentos armazenados</div>
             <div className="summary-number">{notes.length}</div>
-            <div className="summary-foot">Os dados ficam salvos neste dispositivo.</div>
+            <div className="summary-foot">{summaryFoot}</div>
             <div className="summary-actions">
               <button className="btn primary full" disabled={!notes.length} onClick={() => exportToXlsx(notes)}>Exportar XLSX</button>
-              <button className="btn ghost full" disabled={!notes.length} onClick={clearNotes}>Limpar tudo</button>
+              <button className="btn ghost full" disabled={!notes.length} onClick={() => void clearNotes()}>Limpar tudo</button>
             </div>
           </aside>
         </section>
@@ -181,7 +435,7 @@ export default function App() {
             </div>
             <div className="search-wrap">
               <span>⌕</span>
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar NF, CNPJ ou chave" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar NF, CNPJ, fornecedor ou chave" />
             </div>
           </div>
 
@@ -191,6 +445,8 @@ export default function App() {
                 <tr>
                   <th>Número da NF</th>
                   <th>CNPJ do emitente</th>
+                  <th>Fornecedor</th>
+                  <th>Valor</th>
                   <th>Chave de acesso</th>
                   <th>Leitura</th>
                   <th aria-label="Ações" />
@@ -201,16 +457,53 @@ export default function App() {
                   <tr key={note.id}>
                     <td><strong>{note.numeroNF}</strong></td>
                     <td>{note.cnpjEmitente}</td>
+                    <td>
+                      <input
+                        className={`editable-cell-input ${note.fornecedor ? '' : 'pending'}`}
+                        value={note.fornecedor}
+                        placeholder="Cadastrar fornecedor"
+                        aria-label={`Fornecedor da NF ${note.numeroNF}`}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          setNotes((current) => current.map((item) =>
+                            item.id === note.id ? { ...item, fornecedor: value } : item,
+                          ))
+                        }}
+                        onBlur={(event) => {
+                          void persistNote({ ...note, fornecedor: event.currentTarget.value.trim() })
+                        }}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        className="editable-cell-input amount-input"
+                        inputMode="decimal"
+                        value={note.valor == null ? '' : formatMoney(note.valor)}
+                        placeholder="0,00"
+                        aria-label={`Valor da NF ${note.numeroNF}`}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          const parsedValue = parseMoney(value)
+                          setNotes((current) => current.map((item) =>
+                            item.id === note.id ? { ...item, valor: parsedValue } : item,
+                          ))
+                        }}
+                        onBlur={(event) => {
+                          const parsedValue = parseMoney(event.currentTarget.value)
+                          void persistNote({ ...note, valor: parsedValue })
+                        }}
+                      />
+                    </td>
                     <td><code>{note.chaveAcesso}</code></td>
                     <td>{formatDate(note.dataLeitura)}</td>
                     <td className="action-cell">
-                      <button className="delete-btn" onClick={() => removeNote(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
+                      <button className="delete-btn" onClick={() => void removeNote(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
                     </td>
                   </tr>
                 ))}
                 {!filteredNotes.length && (
                   <tr>
-                    <td colSpan={5} className="empty-row">
+                    <td colSpan={7} className="empty-row">
                       {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi lida ainda.'}
                     </td>
                   </tr>
@@ -224,6 +517,142 @@ export default function App() {
       {toast && <div className={`toast ${toast.type}`}>{toast.text}</div>}
     </div>
   )
+}
+
+function AuthScreen() {
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+
+  async function submit() {
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (!normalizedEmail || password.length < 6) {
+      setMessage({ type: 'error', text: 'Informe um e-mail válido e uma senha com pelo menos 6 caracteres.' })
+      return
+    }
+
+    setBusy(true)
+    setMessage(null)
+
+    try {
+      const nextSession = mode === 'login'
+        ? await signIn(normalizedEmail, password)
+        : await signUp(normalizedEmail, password)
+
+      if (!nextSession && mode === 'signup') {
+        setMessage({
+          type: 'success',
+          text: 'Usuário criado. Confirme o e-mail, se solicitado, e depois entre.',
+        })
+      }
+    } catch (cause: unknown) {
+      setMessage({
+        type: 'error',
+        text: getAuthErrorMessage(cause),
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="brand-mark large">NF</div>
+        <h1>NF Scanner</h1>
+        <p className="auth-subtitle">Entre para usar a mesma base no celular e no computador.</p>
+
+        <div className="auth-form">
+          <label htmlFor="auth-email">E-mail</label>
+          <input
+            id="auth-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="seu@email.com"
+          />
+
+          <label htmlFor="auth-password">Senha</label>
+          <input
+            id="auth-password"
+            type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Mínimo de 6 caracteres"
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void submit()
+            }}
+          />
+
+          {message && <div className={`auth-message ${message.type}`}>{message.text}</div>}
+
+          <button className="btn primary full" disabled={busy} onClick={() => void submit()}>
+            {busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar usuário'}
+          </button>
+
+          <button
+            className="auth-switch"
+            type="button"
+            onClick={() => {
+              setMode((current) => current === 'login' ? 'signup' : 'login')
+              setMessage(null)
+            }}
+          >
+            {mode === 'login' ? 'Primeiro acesso? Criar usuário' : 'Já tenho usuário. Entrar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function toSupplierMap(suppliers: Array<{ cnpj: string; nome: string }>): Record<string, string> {
+  return suppliers.reduce<Record<string, string>>((map, supplier) => {
+    map[supplier.cnpj.replace(/\D/g, '')] = supplier.nome
+    return map
+  }, {})
+}
+
+function formatMoney(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+function parseMoney(value: string): number | null {
+  const text = value.trim().replace(/\s/g, '')
+  if (!text) return null
+
+  const normalized = text.includes(',')
+    ? text.replace(/\./g, '').replace(',', '.')
+    : text
+
+  const number = Number(normalized)
+  return Number.isFinite(number) ? number : null
+}
+
+function getAuthErrorMessage(cause: unknown): string {
+  const message = cause instanceof Error ? cause.message.toLowerCase() : ''
+
+  if (message.includes('invalid login credentials')) {
+    return 'E-mail ou senha incorretos.'
+  }
+
+  if (message.includes('user already registered')) {
+    return 'Este usuário já existe. Entre com ele.'
+  }
+
+  if (message.includes('email not confirmed')) {
+    return 'Confirme o e-mail antes de entrar.'
+  }
+
+  return cause instanceof Error ? cause.message : 'Não foi possível concluir o acesso.'
 }
 
 function formatDate(value: string): string {
