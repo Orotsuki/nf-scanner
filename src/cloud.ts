@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import type { NotaFiscal } from './types'
+import type { NotaFiscal, NotaStatus } from './types'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export type SupplierRecord = {
@@ -18,6 +18,10 @@ function client() {
   return supabase
 }
 
+function normalizeStatus(value: unknown): NotaStatus {
+  return value === 'Conferida' || value === 'Finalizada' ? value : 'Pendente'
+}
+
 function cloudToNote(row: Record<string, unknown>): NotaFiscal {
   return {
     id: String(row.id),
@@ -26,7 +30,9 @@ function cloudToNote(row: Record<string, unknown>): NotaFiscal {
     fornecedor: String(row.fornecedor ?? ''),
     valor: typeof row.valor === 'number' ? row.valor : row.valor == null ? null : Number(row.valor),
     chaveAcesso: String(row.chave_acesso ?? ''),
-    dataLeitura: String(row.data_leitura ?? new Date().toISOString()),
+    dataCadastro: String(row.data_cadastro ?? new Date().toISOString()),
+    dataControladoria: row.data_controladoria ? String(row.data_controladoria) : null,
+    status: normalizeStatus(row.status),
   }
 }
 
@@ -54,12 +60,11 @@ export async function signOut(): Promise<void> {
   if (error) throw error
 }
 
-
 export async function fetchCloudNotes(): Promise<NotaFiscal[]> {
   const { data, error } = await client()
     .from('notas_fiscais')
     .select('*')
-    .order('data_leitura', { ascending: false })
+    .order('data_cadastro', { ascending: false })
 
   if (error) throw error
   return (data ?? []).map((row) => cloudToNote(row as Record<string, unknown>))
@@ -128,7 +133,9 @@ export async function upsertCloudNote(note: NotaFiscal): Promise<void> {
         fornecedor: note.fornecedor.trim(),
         valor: note.valor,
         chave_acesso: note.chaveAcesso,
-        data_leitura: note.dataLeitura,
+        data_cadastro: note.dataCadastro,
+        data_controladoria: note.dataControladoria,
+        status: note.status,
       },
       { onConflict: 'user_id,chave_acesso' },
     )
@@ -145,7 +152,9 @@ export async function updateCloudNote(note: NotaFiscal): Promise<void> {
       fornecedor: note.fornecedor.trim(),
       valor: note.valor,
       chave_acesso: note.chaveAcesso,
-      data_leitura: note.dataLeitura,
+      data_cadastro: note.dataCadastro,
+      data_controladoria: note.dataControladoria,
+      status: note.status,
     })
     .eq('id', note.id)
 
