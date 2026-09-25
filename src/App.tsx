@@ -79,7 +79,7 @@ export default function App() {
     if (!session || !isSupabaseConfigured) return
 
     let cancelled = false
-    let unsubscribe = () => undefined
+    let unsubscribe: () => void = () => undefined
 
     const refreshFromCloud = async () => {
       try {
