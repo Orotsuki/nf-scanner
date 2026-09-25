@@ -19,7 +19,7 @@ Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barr
 
 ## Sincronização entre celular e PC
 
-A sincronização usa Supabase Auth + Postgres + Row Level Security. O mesmo usuário pode entrar no celular e no PC e visualizar a mesma base. Dados de um usuário não ficam disponíveis para outro.
+A sincronização usa Supabase Auth + Postgres + Row Level Security. A interface usa **usuário + senha**, sem solicitar e-mail. Internamente, o projeto usa um identificador técnico derivado do usuário para aproveitar o mecanismo seguro de autenticação do Supabase. O mesmo usuário pode entrar no celular e no PC e visualizar a mesma base. Dados de um usuário não ficam disponíveis para outro.
 
 O projeto inclui:
 
@@ -27,12 +27,13 @@ O projeto inclui:
 - `public/config.js`: configuração pública do projeto Supabase.
 - `src/cloud.ts`: autenticação, leitura/escrita e sincronização.
 - `src/supabase.ts`: inicialização do cliente Supabase.
+- `src/auth.ts`: autenticação com usuário + senha.
 
 ### Configuração do Supabase
 
 1. Crie um projeto no Supabase.
 2. No SQL Editor, execute `supabase/schema.sql`.
-3. No painel de Authentication, habilite acesso por e-mail e senha.
+3. A função `username-auth` cria os usuários com confirmação automática e permite que a interface trabalhe somente com usuário + senha.
 4. Em Project Settings, copie a URL do projeto e a chave **Publishable**.
 5. Preencha `public/config.js`:
 
@@ -45,7 +46,7 @@ window.NF_SCANNER_CONFIG = {
 
 Não coloque a chave `secret`/`service_role` no navegador.
 
-Depois de criar o primeiro usuário, o mesmo e-mail e senha podem ser usados no celular e no PC.
+Depois de criar o primeiro usuário na tela do NF Scanner, o mesmo usuário e senha podem ser usados no celular e no PC.
 
 ## Fornecedores
 
