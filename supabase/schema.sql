@@ -104,3 +104,12 @@ create index if not exists idx_notas_fiscais_user_data
 
 create index if not exists idx_fornecedores_user_cnpj
   on public.fornecedores (user_id, cnpj);
+
+
+create table if not exists public.app_config (
+  key text primary key,
+  value text not null
+);
+
+alter table public.app_config enable row level security;
+revoke all on public.app_config from anon, authenticated;
