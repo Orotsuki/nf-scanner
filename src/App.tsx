@@ -13,9 +13,7 @@ import {
   findSupplierByCnpj,
   getSession,
   mergeLocalNotesIntoCloud,
-  signIn,
   signOut,
-  signUp,
   subscribeToAuthChanges,
   subscribeToCloudChanges,
   updateCloudNote,
@@ -23,6 +21,7 @@ import {
   upsertSupplier,
 } from './cloud'
 import { isSupabaseConfigured } from './supabase'
+import { signInUsername, signUpUsername } from './auth'
 
 const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
 
@@ -338,8 +337,9 @@ export default function App() {
     offline: 'Sem conexão com a nuvem',
   }[syncStatus]
 
+  const username = String(session?.user.user_metadata?.username ?? 'usuário')
   const summaryFoot = session
-    ? `Acesso: ${session.user.email ?? 'usuário'} • ${syncLabel}`
+    ? `Usuário: ${username} • ${syncLabel}`
     : 'A nuvem ainda não foi configurada neste projeto.'
 
   return (
@@ -551,16 +551,27 @@ function EditableNoteRow({
 
 function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
   async function submit() {
-    const normalizedEmail = email.trim().toLowerCase()
+    const normalizedUsername = username.trim().toLowerCase()
 
-    if (!normalizedEmail || password.length < 6) {
-      setMessage({ type: 'error', text: 'Informe um e-mail válido e uma senha com pelo menos 6 caracteres.' })
+    if (!/^[\p{L}\p{N}._-]{3,30}$/u.test(normalizedUsername)) {
+      setMessage({
+        type: 'error',
+        text: 'O usuário deve ter de 3 a 30 caracteres e usar apenas letras, números, ponto, hífen ou sublinhado.',
+      })
+      return
+    }
+
+    if (password.length < 6 || password.length > 72) {
+      setMessage({
+        type: 'error',
+        text: 'A senha deve ter entre 6 e 72 caracteres.',
+      })
       return
     }
 
@@ -568,15 +579,10 @@ function AuthScreen() {
     setMessage(null)
 
     try {
-      const nextSession = mode === 'login'
-        ? await signIn(normalizedEmail, password)
-        : await signUp(normalizedEmail, password)
-
-      if (!nextSession && mode === 'signup') {
-        setMessage({
-          type: 'success',
-          text: 'Usuário criado. Confirme o e-mail, se solicitado, e depois entre.',
-        })
+      if (mode === 'login') {
+        await signInUsername(normalizedUsername, password)
+      } else {
+        await signUpUsername(normalizedUsername, password)
       }
     } catch (cause: unknown) {
       setMessage({
@@ -596,14 +602,16 @@ function AuthScreen() {
         <p className="auth-subtitle">Entre para usar a mesma base no celular e no computador.</p>
 
         <div className="auth-form">
-          <label htmlFor="auth-email">E-mail</label>
+          <label htmlFor="auth-username">Usuário</label>
           <input
-            id="auth-email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="seu@email.com"
+            id="auth-username"
+            type="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="Ex.: almoxarifado"
           />
 
           <label htmlFor="auth-password">Senha</label>
