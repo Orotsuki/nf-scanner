@@ -10,6 +10,7 @@ Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barr
 - Validação da chave e dígito verificador.
 - CNPJ/documento armazenado somente com números.
 - Cadastro automático de fornecedor por CNPJ/documento.
+- Cadastro de novos usuários protegido por código privado.
 - Valor da NF preenchido manualmente.
 - Sincronização da base entre celular e computador por conta de usuário.
 - Armazenamento local como cache/fallback.
@@ -46,7 +47,7 @@ window.NF_SCANNER_CONFIG = {
 
 Não coloque a chave `secret`/`service_role` no navegador.
 
-Depois de criar o primeiro usuário na tela do NF Scanner, o mesmo usuário e senha podem ser usados no celular e no PC.
+Para criar novos usuários, a tela solicita um código privado de cadastro. O código não fica no frontend; a função de autenticação valida seu hash no banco. Depois de criar o usuário, o mesmo usuário e senha podem ser usados no celular e no PC.
 
 ## Fornecedores
 
