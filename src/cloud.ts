@@ -32,7 +32,7 @@ function cloudToNote(row: Record<string, unknown>): NotaFiscal {
 
 export async function getSession(): Promise<Session | null> {
   if (!supabase || !isSupabaseConfigured) return null
-  const { data, error } = await supabase.auth.getSession()
+  const { data, error } = await supabase.auth.refreshSession()
   if (error) throw error
   return data.session
 }
