@@ -320,6 +320,7 @@ export default function App() {
 
   function requestScan() {
     setScannerOpen(true)
+    setManualOpen(false)
     setScanTrigger((value) => value + 1)
   }
 
