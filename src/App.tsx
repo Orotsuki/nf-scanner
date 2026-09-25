@@ -44,7 +44,6 @@ function isDesktopDevice(): boolean {
 export default function App() {
   const [notes, setNotes] = useState<NotaFiscal[]>(() => loadNotes())
   const [scannerOpen, setScannerOpen] = useState(() => !isDesktopDevice())
-  const [scanTrigger, setScanTrigger] = useState(0)
   const [manualOpen, setManualOpen] = useState(() => isDesktopDevice())
   const [manualValue, setManualValue] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
@@ -318,12 +317,6 @@ export default function App() {
     }
   }
 
-  function requestScan() {
-    setScannerOpen(true)
-    setManualOpen(false)
-    setScanTrigger((value) => value + 1)
-  }
-
   async function installApp() {
     if (!installPrompt) return
     await installPrompt.prompt()
@@ -445,9 +438,27 @@ export default function App() {
                 <h1>Escanear NF-e</h1>
                 <p>Use a câmera para ler o código de barras ou QR Code.</p>
               </div>
-              <button className="btn secondary" onClick={() => setScannerOpen((value) => !value)}>
-                {scannerOpen ? 'Fechar câmera' : 'Abrir câmera'}
-              </button>
+              <div className="camera-actions">
+                <button
+                  className="btn secondary"
+                  onClick={() => {
+                    const nextOpen = !scannerOpen
+                    setScannerOpen(nextOpen)
+                    if (nextOpen) setManualOpen(false)
+                  }}
+                >
+                  {scannerOpen ? 'Fechar câmera' : 'Abrir câmera'}
+                </button>
+                <button
+                  className="btn secondary"
+                  onClick={() => {
+                    setManualOpen(true)
+                    setScannerOpen(false)
+                  }}
+                >
+                  Digitar chave de acesso
+                </button>
+              </div>
             </div>
 
             {scannerOpen && (
@@ -457,11 +468,6 @@ export default function App() {
                 scanTrigger={scanTrigger}
               />
             )}
-
-            <div className="scan-actions">
-              <button className="btn primary" onClick={requestScan}>Ler código</button>
-              <button className="btn secondary" onClick={() => setManualOpen(true)}>Digitar chave</button>
-            </div>
 
             {manualOpen && (
               <div className="manual-box">
