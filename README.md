@@ -1,6 +1,6 @@
 # NF Scanner — PWA
 
-Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barras/QR Code pela câmera, extrai o número do documento, CNPJ/documento do emitente e chave de acesso, permite completar fornecedor e valor e exporta para `.xlsx`.
+Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barras/QR Code pela câmera, extrai o número do documento, CNPJ/documento do emitente e chave de acesso, permite completar fornecedor e valor .
 
 ## Funcionalidades atuais
 
@@ -14,7 +14,7 @@ Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barr
 - Valor da NF preenchido manualmente.
 - Sincronização da base entre celular e computador por conta de usuário.
 - Armazenamento local como cache/fallback.
-- Exportação XLSX.
+- Base centralizada de notas fiscais com sincronização entre dispositivos.
 - PWA instalável.
 - Interface responsiva.
 
@@ -59,7 +59,7 @@ Quando uma NF é lida, o sistema procura o CNPJ/documento na tabela de fornecedo
 
 ## Valor
 
-O valor permanece manual nesta versão. Ele pode ser preenchido diretamente na tabela e também é exportado para o XLSX.
+O valor permanece manual nesta versão e é preenchido diretamente na tabela.
 
 ## Executar localmente
 
