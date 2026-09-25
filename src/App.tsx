@@ -679,15 +679,15 @@ function getAuthErrorMessage(cause: unknown): string {
   const message = cause instanceof Error ? cause.message.toLowerCase() : ''
 
   if (message.includes('invalid login credentials')) {
-    return 'E-mail ou senha incorretos.'
+    return 'Usuário ou senha incorretos.'
   }
 
-  if (message.includes('user already registered')) {
+  if (message.includes('already exists') || message.includes('already registered')) {
     return 'Este usuário já existe. Entre com ele.'
   }
 
-  if (message.includes('email not confirmed')) {
-    return 'Confirme o e-mail antes de entrar.'
+  if (message.includes('user not found')) {
+    return 'Usuário ou senha incorretos.'
   }
 
   return cause instanceof Error ? cause.message : 'Não foi possível concluir o acesso.'
