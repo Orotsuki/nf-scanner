@@ -21,7 +21,14 @@ import {
   upsertSupplier,
 } from './cloud'
 import { isSupabaseConfigured } from './supabase'
-import { signInUsername, signUpUsername } from './auth'
+import { signInUsername } from './auth'
+import {
+  createManagedUser,
+  deleteManagedUser,
+  fetchManagedUsers,
+  resetManagedUserPassword,
+  type ManagedUser,
+} from './adminUsers'
 
 const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
 
@@ -40,6 +47,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'connecting' : 'local')
   const [supplierMap, setSupplierMap] = useState<Record<string, string>>({})
+  const [userManagementOpen, setUserManagementOpen] = useState(false)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -338,6 +346,7 @@ export default function App() {
   }[syncStatus]
 
   const username = String(session?.user.user_metadata?.username ?? 'usuário')
+  const isAdmin = session?.user.app_metadata?.role === 'admin'
   const summaryFoot = session
     ? `Usuário: ${username} • ${syncLabel}`
     : 'A nuvem ainda não foi configurada neste projeto.'
@@ -475,6 +484,10 @@ export default function App() {
       </main>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.text}</div>}
+
+      {userManagementOpen && isAdmin && (
+        <UserManagement onClose={() => setUserManagementOpen(false)} currentUserId={session.user.id} />
+      )}
     </div>
   )
 }
@@ -550,29 +563,21 @@ function EditableNoteRow({
 }
 
 function AuthScreen() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [registrationCode, setRegistrationCode] = useState('')
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
 
   async function submit() {
     const normalizedUsername = username.trim().toLowerCase()
 
     if (!/^[\p{L}\p{N}._-]{3,30}$/u.test(normalizedUsername)) {
-      setMessage({
-        type: 'error',
-        text: 'O usuário deve ter de 3 a 30 caracteres e usar apenas letras, números, ponto, hífen ou sublinhado.',
-      })
+      setMessage('O usuário deve ter de 3 a 30 caracteres e usar apenas letras, números, ponto, hífen ou sublinhado.')
       return
     }
 
     if (password.length < 6 || password.length > 72) {
-      setMessage({
-        type: 'error',
-        text: 'A senha deve ter entre 6 e 72 caracteres.',
-      })
+      setMessage('A senha deve ter entre 6 e 72 caracteres.')
       return
     }
 
@@ -580,16 +585,9 @@ function AuthScreen() {
     setMessage(null)
 
     try {
-      if (mode === 'login') {
-        await signInUsername(normalizedUsername, password)
-      } else {
-        await signUpUsername(normalizedUsername, password, registrationCode)
-      }
+      await signInUsername(normalizedUsername, password)
     } catch (cause: unknown) {
-      setMessage({
-        type: 'error',
-        text: getAuthErrorMessage(cause),
-      })
+      setMessage(getAuthErrorMessage(cause))
     } finally {
       setBusy(false)
     }
@@ -612,54 +610,215 @@ function AuthScreen() {
             autoComplete="username"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="Ex.: almoxarifado"
+            placeholder="Ex.: andre.mendonca"
           />
-
-          {mode === 'signup' && (
-            <>
-              <label htmlFor="auth-registration-code">Código de cadastro</label>
-              <input
-                id="auth-registration-code"
-                type="password"
-                autoCapitalize="characters"
-                autoCorrect="off"
-                autoComplete="off"
-                value={registrationCode}
-                onChange={(event) => setRegistrationCode(event.target.value)}
-                placeholder="Código fornecido pelo administrador"
-              />
-            </>
-          )}
 
           <label htmlFor="auth-password">Senha</label>
           <input
             id="auth-password"
             type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Mínimo de 6 caracteres"
+            placeholder="Sua senha"
             onKeyDown={(event) => {
               if (event.key === 'Enter') void submit()
             }}
           />
 
-          {message && <div className={`auth-message ${message.type}`}>{message.text}</div>}
+          {message && <div className="auth-message error">{message}</div>}
 
           <button className="btn primary full" disabled={busy} onClick={() => void submit()}>
-            {busy ? 'Aguarde…' : mode === 'login' ? 'Entrar' : 'Criar usuário'}
+            {busy ? 'Entrando…' : 'Entrar'}
           </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-          <button
-            className="auth-switch"
-            type="button"
-            onClick={() => {
-              setMode((current) => current === 'login' ? 'signup' : 'login')
-              setMessage(null)
-            }}
-          >
-            {mode === 'login' ? 'Primeiro acesso? Criar usuário' : 'Já tenho usuário. Entrar'}
-          </button>
+function UserManagement({
+  onClose,
+  currentUserId,
+}: {
+  onClose: () => void
+  currentUserId: string
+}) {
+  const [users, setUsers] = useState<ManagedUser[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [resetValues, setResetValues] = useState<Record<string, string>>({})
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true)
+    try {
+      setUsers(await fetchManagedUsers())
+      setMessage(null)
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : 'Não foi possível carregar os usuários.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadUsers()
+  }, [loadUsers])
+
+  async function handleCreate() {
+    const username = newUsername.trim().toLowerCase()
+
+    if (!/^[\p{L}\p{N}._-]{3,30}$/u.test(username)) {
+      setMessage('Informe um usuário válido.')
+      return
+    }
+
+    if (newPassword.length < 6 || newPassword.length > 72) {
+      setMessage('A senha deve ter entre 6 e 72 caracteres.')
+      return
+    }
+
+    setBusy(true)
+    setMessage(null)
+
+    try {
+      await createManagedUser(username, newPassword)
+      setNewUsername('')
+      setNewPassword('')
+      await loadUsers()
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : 'Não foi possível criar o usuário.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleReset(user: ManagedUser) {
+    const password = resetValues[user.id] ?? ''
+
+    if (password.length < 6 || password.length > 72) {
+      setMessage('A nova senha deve ter entre 6 e 72 caracteres.')
+      return
+    }
+
+    setBusy(true)
+    setMessage(null)
+
+    try {
+      await resetManagedUserPassword(user.id, password)
+      setResetValues((current) => ({ ...current, [user.id]: '' }))
+      setMessage(`Senha de ${user.username} redefinida.`)
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : 'Não foi possível redefinir a senha.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete(user: ManagedUser) {
+    if (user.id === currentUserId) return
+
+    if (!window.confirm(`Remover o usuário "${user.username}"?`)) return
+
+    setBusy(true)
+    setMessage(null)
+
+    try {
+      await deleteManagedUser(user.id)
+      await loadUsers()
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : 'Não foi possível remover o usuário.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="modal-backdrop">
+      <div className="user-management">
+        <div className="user-management-header">
+          <div>
+            <h2>Gestão de usuários</h2>
+            <p>Adicionar, remover e redefinir senhas.</p>
+          </div>
+          <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
+        </div>
+
+        <div className="user-create-box">
+          <div className="user-create-title">Adicionar usuário</div>
+          <div className="user-create-grid">
+            <input
+              value={newUsername}
+              onChange={(event) => setNewUsername(event.target.value)}
+              placeholder="Usuário"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+            <input
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              type="password"
+              placeholder="Senha inicial"
+              autoComplete="new-password"
+            />
+            <button className="btn primary" disabled={busy} onClick={() => void handleCreate()}>
+              Adicionar
+            </button>
+          </div>
+        </div>
+
+        {message && <div className="auth-message error">{message}</div>}
+
+        <div className="user-list">
+          {loading ? (
+            <div className="user-empty">Carregando usuários…</div>
+          ) : users.map((user) => (
+            <div className="user-row" key={user.id}>
+              <div className="user-main">
+                <div className="user-name">{user.username}</div>
+                <div className="user-meta">
+                  {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                  {' • '}
+                  Criado em {formatDate(user.created_at)}
+                </div>
+              </div>
+
+              <div className="user-reset">
+                <input
+                  type="password"
+                  value={resetValues[user.id] ?? ''}
+                  onChange={(event) => setResetValues((current) => ({
+                    ...current,
+                    [user.id]: event.target.value,
+                  }))}
+                  placeholder="Nova senha"
+                  autoComplete="new-password"
+                />
+                <button
+                  className="btn secondary"
+                  disabled={busy || !(resetValues[user.id] ?? '')}
+                  onClick={() => void handleReset(user)}
+                >
+                  Redefinir
+                </button>
+              </div>
+
+              <button
+                className="btn danger"
+                disabled={busy || user.id === currentUserId || user.role === 'admin'}
+                onClick={() => void handleDelete(user)}
+              >
+                Remover
+              </button>
+            </div>
+          ))}
+
+          {!loading && !users.length && (
+            <div className="user-empty">Nenhum usuário encontrado.</div>
+          )}
         </div>
       </div>
     </div>
