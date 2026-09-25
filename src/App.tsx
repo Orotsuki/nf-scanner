@@ -381,7 +381,6 @@ export default function App() {
     offline: 'Sem conexão com a nuvem',
   }[syncStatus]
 
-  const supplierMapEntries = () => supplierRecords
   const username = String(session?.user.user_metadata?.username ?? 'usuário')
   const isAdmin = session?.user.app_metadata?.role === 'admin'
   const summaryFoot = session
