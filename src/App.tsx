@@ -553,6 +553,7 @@ function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [registrationCode, setRegistrationCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null)
 
@@ -582,7 +583,7 @@ function AuthScreen() {
       if (mode === 'login') {
         await signInUsername(normalizedUsername, password)
       } else {
-        await signUpUsername(normalizedUsername, password)
+        await signUpUsername(normalizedUsername, password, registrationCode)
       }
     } catch (cause: unknown) {
       setMessage({
@@ -613,6 +614,22 @@ function AuthScreen() {
             onChange={(event) => setUsername(event.target.value)}
             placeholder="Ex.: almoxarifado"
           />
+
+          {mode === 'signup' && (
+            <>
+              <label htmlFor="auth-registration-code">Código de cadastro</label>
+              <input
+                id="auth-registration-code"
+                type="password"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                autoComplete="off"
+                value={registrationCode}
+                onChange={(event) => setRegistrationCode(event.target.value)}
+                placeholder="Código fornecido pelo administrador"
+              />
+            </>
+          )}
 
           <label htmlFor="auth-password">Senha</label>
           <input
