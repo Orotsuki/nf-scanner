@@ -12,7 +12,6 @@ import {
   fetchSuppliers,
   findSupplierByCnpj,
   getSession,
-  isSupabaseConfigured,
   mergeLocalNotesIntoCloud,
   signIn,
   signOut,
@@ -23,6 +22,7 @@ import {
   upsertCloudNote,
   upsertSupplier,
 } from './cloud'
+import { isSupabaseConfigured } from './supabase'
 
 const SAMPLE_KEY = '31260922545180000120550010001176811053342306'
 
