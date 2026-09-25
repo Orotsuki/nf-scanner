@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nf-scanner-v1';
+const CACHE_NAME = 'nf-scanner-v2';
 const APP_SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {
@@ -20,6 +20,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // A configuração do Supabase deve ser sempre buscada da rede.
+  if (url.pathname.endsWith('/config.js')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
