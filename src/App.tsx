@@ -544,7 +544,7 @@ export default function App() {
         <section className="list-panel">
           <div className="section-heading compact">
             <div>
-              <h2>Notas fiscais cadastradas</h2>
+              <h2>Notas fiscais cadastradas:</h2>
               <p>{filteredNotes.length} de {notes.length} registros</p>
             </div>
             <div className="list-tools">
