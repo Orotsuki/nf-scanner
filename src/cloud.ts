@@ -49,19 +49,12 @@ export function subscribeToAuthChanges(
   return () => data.subscription.unsubscribe()
 }
 
-export async function signIn(email: string, password: string): Promise<Session | null> {
-  const { data, error } = await client().auth.signInWithPassword({ email, password })
-  if (error) throw error
-  return data.session
-}
-
-export async function signUp(email: string, password: string): Promise<Session | null> {
-  const { data, error } = await client().auth.signUp({ email, password })
-  if (error) throw error
-  return data.session
-}
-
 export async function signOut(): Promise<void> {
+  const { error } = await client().auth.signOut()
+  if (error) throw error
+}
+
+(): Promise<void> {
   const { error } = await client().auth.signOut()
   if (error) throw error
 }
