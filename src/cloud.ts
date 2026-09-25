@@ -176,7 +176,7 @@ export async function deleteAllCloudNotes(): Promise<void> {
   const { error } = await client()
     .from('notas_fiscais')
     .delete()
-    .not('id', 'is', null)
+    .neq('id', '00000000-0000-0000-0000-000000000000')
 
   if (error) throw error
 }
