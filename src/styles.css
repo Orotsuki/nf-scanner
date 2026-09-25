@@ -605,3 +605,197 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   }
   .user-row .btn.danger { width: 100%; }
 }
+
+.list-tools {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: min(560px, 100%);
+}
+.filter-wrap {
+  display: grid;
+  gap: 5px;
+  flex: 0 0 130px;
+}
+.filter-wrap label {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.filter-wrap select {
+  height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  padding: 0 10px;
+  background: white;
+  color: #0f172a;
+  outline: none;
+  font-size: 12px;
+}
+.list-tools .search-wrap {
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.editable-cell-select {
+  width: 100%;
+  min-width: 120px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 8px;
+  background: transparent;
+  color: #0f172a;
+  outline: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+.editable-cell-select:focus {
+  border-color: #94a3b8;
+  background: white;
+}
+.status-pendente { background: #fffbeb; color: #b45309; }
+.status-conferida { background: #f0fdf4; color: #15803d; }
+.status-finalizada { background: #eff6ff; color: #1d4ed8; }
+.control-date-input {
+  min-width: 135px;
+}
+.date-cell {
+  white-space: nowrap;
+  color: #475569;
+  font-size: 11px;
+}
+
+.dashboard-modal {
+  width: min(880px, 100%);
+  max-height: min(820px, calc(100vh - 40px));
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.3);
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.dashboard-card span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+.dashboard-card strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--navy);
+  font-size: 30px;
+  line-height: 1;
+}
+.dashboard-card.pending { background: #fffbeb; border-color: #fde68a; }
+.dashboard-card.pending strong { color: #b45309; }
+.dashboard-card.checked { background: #f0fdf4; border-color: #bbf7d0; }
+.dashboard-card.checked strong { color: #15803d; }
+.dashboard-card.finalized { background: #eff6ff; border-color: #bfdbfe; }
+.dashboard-card.finalized strong { color: #1d4ed8; }
+.dashboard-value {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--navy);
+  color: white;
+}
+.dashboard-value span {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+.dashboard-value strong {
+  font-size: 24px;
+}
+
+.supplier-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.supplier-search {
+  width: min(360px, 100%);
+}
+.supplier-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+.supplier-row {
+  display: grid;
+  grid-template-columns: 175px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.supplier-row code {
+  color: #334155;
+  font-size: 11px;
+}
+.supplier-create-grid {
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+}
+
+@media (max-width: 980px) {
+  .list-tools {
+    width: 100%;
+    min-width: 0;
+  }
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .supplier-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .supplier-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .list-tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-wrap {
+    flex-basis: auto;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dashboard-value {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .supplier-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .supplier-create-grid {
+    grid-template-columns: 1fr;
+  }
+}
