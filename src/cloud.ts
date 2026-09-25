@@ -194,7 +194,8 @@ export function subscribeToCloudChanges(
 ): () => void {
   if (!supabase || !isSupabaseConfigured) return () => undefined
 
-  const channel = supabase
+  const supabaseClient = supabase
+  const channel = supabaseClient
     .channel(`nf-scanner-sync-${userId}`)
     .on(
       'postgres_changes',
@@ -219,6 +220,6 @@ export function subscribeToCloudChanges(
     .subscribe()
 
   return () => {
-    void supabase.removeChannel(channel)
+    void supabaseClient.removeChannel(channel)
   }
 }
