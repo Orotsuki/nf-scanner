@@ -54,10 +54,6 @@ export async function signOut(): Promise<void> {
   if (error) throw error
 }
 
-(): Promise<void> {
-  const { error } = await client().auth.signOut()
-  if (error) throw error
-}
 
 export async function fetchCloudNotes(): Promise<NotaFiscal[]> {
   const { data, error } = await client()
