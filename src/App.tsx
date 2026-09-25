@@ -48,6 +48,7 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'connecting' : 'local')
   const [supplierMap, setSupplierMap] = useState<Record<string, string>>({})
   const [userManagementOpen, setUserManagementOpen] = useState(false)
+  const [topMenuOpen, setTopMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -372,9 +373,49 @@ export default function App() {
             </div>
           )}
           {session && (
-            <button className="icon-btn" onClick={() => void handleSignOut()} aria-label="Sair">↪</button>
+            <button className="icon-btn" onClick={() => void handleSignOut()} aria-label="Sair" title="Sair">↪</button>
           )}
-          <button className="icon-btn" onClick={() => setManualOpen((value) => !value)} aria-label="Abrir digitação manual">⌨</button>
+          {session && (
+            <div className="top-menu-wrap">
+              <button
+                className="icon-btn menu-trigger"
+                onClick={() => setTopMenuOpen((value) => !value)}
+                aria-label="Abrir menu"
+                aria-expanded={topMenuOpen}
+                title="Menu"
+              >
+                <span />
+                <span />
+                <span />
+              </button>
+
+              {topMenuOpen && (
+                <div className="top-menu" role="menu">
+                  <div className="top-menu-user">
+                    <strong>{username}</strong>
+                    <span>{isAdmin ? 'Administrador' : 'Usuário'}</span>
+                  </div>
+
+                  {isAdmin && (
+                    <button
+                      className="top-menu-item"
+                      type="button"
+                      onClick={() => {
+                        setTopMenuOpen(false)
+                        setUserManagementOpen(true)
+                      }}
+                    >
+                      <span className="top-menu-icon">⚙</span>
+                      <span>
+                        <strong>Gestão de usuários</strong>
+                        <small>Adicionar, remover e redefinir senhas</small>
+                      </span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
