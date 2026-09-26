@@ -1,5 +1,3 @@
-export type NotaStatus = 'Pendente' | 'Conferida' | 'Finalizada'
-
 export type NotaFiscal = {
   id: string
   numeroNF: string
@@ -8,8 +6,7 @@ export type NotaFiscal = {
   valor: number | null
   chaveAcesso: string
   dataCadastro: string
-  dataControladoria: string | null
-  status: NotaStatus
+  dataEnvio: string | null
 }
 
 export type ParsedNFe = {
