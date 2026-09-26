@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
@@ -61,6 +61,8 @@ export default function App() {
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
+  const [missingFilter, setMissingFilter] = useState<'Todas' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
+  const topMenuRef = useRef<HTMLDivElement>(null)
   const [darkMode, setDarkMode] = useState(() => {
     try {
       return localStorage.getItem('nf-scanner:dark-mode') === 'true'
@@ -196,6 +198,19 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  useEffect(() => {
+    if (!topMenuOpen) return
+
+    function handleOutsidePointer(event: MouseEvent): void {
+      if (!topMenuRef.current?.contains(event.target as Node)) {
+        setTopMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsidePointer)
+    return () => document.removeEventListener('mousedown', handleOutsidePointer)
+  }, [topMenuOpen])
+
   const addNoteFromRaw = useCallback(async (raw: string) => {
     const parsed = parseNFe(raw)
 
@@ -271,6 +286,13 @@ export default function App() {
     const q = search.trim().toLowerCase()
 
     return notes.filter((note) => {
+      const matchesMissing =
+        missingFilter === 'Todas' ||
+        (missingFilter === 'Sem envio' && !note.dataEnvio) ||
+        (missingFilter === 'Sem fornecedor' && !note.fornecedor.trim()) ||
+        (missingFilter === 'Sem valor' && note.valor == null)
+
+      if (!matchesMissing) return false
       if (!q) return true
 
       return (
@@ -281,7 +303,9 @@ export default function App() {
         note.chaveAcesso.includes(q)
       )
     })
-  }, [notes, search])
+  }, [notes, search, missingFilter])
+
+
 
   const allFilteredSelected =
     filteredNotes.length > 0 &&
@@ -462,19 +486,19 @@ export default function App() {
             <div className="brand-title">NF Scanner</div>
             <div className="brand-subtitle">Leitura rápida de NF-e</div>
           </div>
+          {session && (
+            <div className={`sync-badge ${syncStatus}`} title={syncLabel}>
+              <span className="sync-dot" />
+              <span>{syncLabel}</span>
+            </div>
+          )}
         </div>
         <div className="top-actions">
           {installPrompt && (
             <button className="btn ghost" onClick={installApp}>Instalar</button>
           )}
           {session && (
-            <div className={`sync-badge ${syncStatus}`} title={session.user.email ?? undefined}>
-              <span className="sync-dot" />
-              <span>{syncLabel}</span>
-            </div>
-          )}
-          {session && (
-            <div className="top-menu-wrap">
+            <div className="top-menu-wrap" ref={topMenuRef}>
               <button
                 className="icon-btn menu-trigger"
                 onClick={() => setTopMenuOpen((value) => !value)}
@@ -661,13 +685,28 @@ export default function App() {
               <h2>Notas fiscais cadastradas:</h2>
               <p>{filteredNotes.length} de {notes.length} registros</p>
             </div>
-            <div className="search-wrap">
-              <span>⌕</span>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
-              />
+            <div className="list-tools">
+              <div className="filter-wrap">
+                <label htmlFor="missing-filter">Pendências</label>
+                <select
+                  id="missing-filter"
+                  value={missingFilter}
+                  onChange={(event) => setMissingFilter(event.target.value as typeof missingFilter)}
+                >
+                  <option>Todas</option>
+                  <option>Sem envio</option>
+                  <option>Sem fornecedor</option>
+                  <option>Sem valor</option>
+                </select>
+              </div>
+              <div className="search-wrap">
+                <span>⌕</span>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
+                />
+              </div>
             </div>
           </div>
 
