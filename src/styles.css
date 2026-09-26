@@ -1595,3 +1595,14 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     width: 100%;
   }
 }
+
+
+/* Filtros e pesquisa alinhados à direita da barra */
+.section-heading.compact .list-tools {
+  margin-left: auto;
+}
+@media (max-width: 980px) {
+  .section-heading.compact .list-tools {
+    margin-left: 0;
+  }
+}
