@@ -1188,3 +1188,239 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 .dark-theme .modal-backdrop {
   background: rgba(4, 8, 11, 0.74);
 }
+
+
+/* Ajustes do fluxo operacional */
+.hero-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.recent-note-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border: 1px solid #86efac;
+  border-radius: 14px;
+  background: #f0fdf4;
+  color: #14532d;
+  box-shadow: 0 8px 22px rgba(21,128,61,0.10);
+  animation: note-pop 0.22s ease-out;
+}
+.recent-note-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #16a34a;
+  color: white;
+  font-weight: 900;
+}
+.recent-note-content {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.recent-note-content strong { font-size: 13px; }
+.recent-note-content span {
+  color: #166534;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-note-close {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #166534;
+  font-size: 18px;
+}
+.recent-note-close:hover { background: rgba(21,128,61,0.10); }
+
+.bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.bulk-toolbar > div:first-child { font-size: 12px; }
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.bulk-actions label {
+  font-size: 11px;
+  font-weight: 800;
+}
+.bulk-actions input {
+  height: 38px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  padding: 0 9px;
+  background: white;
+  color: #0f172a;
+}
+.check-cell {
+  width: 38px;
+  text-align: center;
+}
+.check-cell input {
+  width: 16px;
+  height: 16px;
+  accent-color: #16a34a;
+}
+
+.supplier-list-head {
+  display: grid;
+  grid-template-columns: 175px minmax(0, 1fr) 88px;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.supplier-row {
+  grid-template-columns: 175px minmax(0, 1fr) 88px;
+}
+.supplier-row .btn.danger {
+  min-width: 0;
+  width: 88px;
+  padding: 0 8px;
+}
+
+.modal-close {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
+}
+
+@keyframes note-pop {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark Charcoal Industrial — softened */
+.dark-theme {
+  background: #171c20;
+  color: #eef2f3;
+}
+.dark-theme .content {
+  background: #171c20;
+}
+.dark-theme .topbar {
+  background: #1a2025;
+}
+.dark-theme .scanner-panel,
+.dark-theme .summary-card,
+.dark-theme .list-panel,
+.dark-theme .user-management,
+.dark-theme .dashboard-modal {
+  background: #22292f;
+  border-color: #354049;
+}
+.dark-theme .manual-box,
+.dark-theme .user-create-box,
+.dark-theme .scanner-menu,
+.dark-theme .top-menu {
+  background: #282f35;
+  border-color: #3a464f;
+}
+.dark-theme .btn.secondary {
+  background: #293137;
+  border-color: #43505a;
+}
+.dark-theme .btn.ghost {
+  background: #303940;
+}
+.dark-theme .manual-row input,
+.dark-theme .search-wrap input,
+.dark-theme .filter-wrap select,
+.dark-theme .user-create-grid input,
+.dark-theme .user-reset input,
+.dark-theme .scanner-menu select,
+.dark-theme .editable-cell-select,
+.dark-theme .control-date-input,
+.dark-theme .supplier-row .editable-cell-input,
+.dark-theme .bulk-actions input {
+  background: #1d2429;
+  border-color: #43505a;
+  color: #eef2f3;
+}
+.dark-theme th {
+  background: #292f35;
+}
+.dark-theme .supplier-row,
+.dark-theme .dashboard-card {
+  background: #262e34;
+  border-color: #3a464f;
+}
+.dark-theme .recent-note-banner {
+  background: #173024;
+  border-color: #2d6b4b;
+  color: #b9f2cf;
+}
+.dark-theme .recent-note-content span {
+  color: #9de4bb;
+}
+.dark-theme .recent-note-close {
+  color: #9de4bb;
+}
+.dark-theme .bulk-toolbar {
+  background: #253342;
+  border-color: #40566b;
+  color: #c6ddf2;
+}
+.dark-theme .bulk-actions input {
+  background: #1d2429;
+  border-color: #43505a;
+  color: #eef2f3;
+}
+.dark-theme .supplier-list-head {
+  color: #9aa6ae;
+}
+
+@media (max-width: 720px) {
+  .recent-note-banner {
+    align-items: flex-start;
+  }
+  .recent-note-content span {
+    white-space: normal;
+  }
+  .bulk-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .bulk-actions {
+    flex-wrap: wrap;
+  }
+  .bulk-actions input {
+    flex: 1 1 150px;
+  }
+  .supplier-list-head {
+    grid-template-columns: 1fr 1fr 82px;
+  }
+  .supplier-row {
+    grid-template-columns: 1fr 1fr 82px;
+  }
+}
