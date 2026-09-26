@@ -1424,3 +1424,52 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     grid-template-columns: 1fr 1fr 82px;
   }
 }
+
+
+/* Cabeçalho: sincronização junto à identidade do sistema */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand .sync-badge {
+  margin-left: 8px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dark-theme .modal-close {
+  background: #2a3238;
+  border-color: #3e4b54;
+  color: #e8eef1;
+}
+.dark-theme .modal-close:hover {
+  background: #343f47;
+  color: white;
+}
+
+.dark-theme .filter-wrap select {
+  background: #1d2429;
+  color: #eef2f3;
+  border-color: #43505a;
+}
+
+.dark-theme .list-tools .search-wrap input {
+  background: #1d2429;
+  color: #eef2f3;
+  border-color: #43505a;
+}
+
+.dark-theme .supplier-list-head {
+  color: #aeb9c0;
+}
+
+@media (max-width: 720px) {
+  .brand .sync-badge {
+    margin-left: 4px;
+  }
+}
