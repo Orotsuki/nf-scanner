@@ -595,6 +595,7 @@ export default function App() {
                         <small>Adicionar, remover e redefinir senhas</small>
                       </span>
                     </button>
+                  )}
 
                   <button
                     className="top-menu-item"
@@ -627,17 +628,16 @@ export default function App() {
                   </button>
 
                   <button
-                      className="top-menu-item"
-                      type="button"
-                      onClick={() => void installApp()}
-                    >
-                      <span className="top-menu-icon">⇩</span>
-                      <span className="top-menu-text">
-                        <strong>Instalar aplicativo</strong>
-                        <small>Adicionar à tela inicial do celular</small>
-                      </span>
-                    </button>
-                  )}
+                    className="top-menu-item"
+                    type="button"
+                    onClick={() => void installApp()}
+                  >
+                    <span className="top-menu-icon">⇩</span>
+                    <span className="top-menu-text">
+                      <strong>Instalar aplicativo</strong>
+                      <small>Adicionar à tela inicial do celular</small>
+                    </span>
+                  </button>
 
                   <button
                     className="top-menu-item"
