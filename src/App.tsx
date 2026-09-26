@@ -595,7 +595,6 @@ export default function App() {
                         <small>Adicionar, remover e redefinir senhas</small>
                       </span>
                     </button>
-                  )}
 
                   <button
                     className="top-menu-item"
