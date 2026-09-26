@@ -12,14 +12,14 @@
   "theme_color": "#11171c",
   "icons": [
     {
-      "src": "/nf-scanner/icons/icon-192.png",
-      "sizes": "192x192",
+      "src": "/nf-scanner/icons/nf-scanner-icon.svg",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/nf-scanner/icons/icon-512.png",
-      "sizes": "512x512",
+      "src": "/nf-scanner/icons/nf-scanner-icon.svg",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"
     }
