@@ -546,9 +546,6 @@ export default function App() {
           )}
         </div>
         <div className="top-actions">
-          {installPrompt && (
-            <button className="btn ghost" onClick={installApp}>Instalar</button>
-          )}
           {session && (
             <div className="top-menu-wrap" ref={topMenuRef}>
               <button
@@ -630,8 +627,7 @@ export default function App() {
                     </span>
                   </button>
 
-                  {isMobileDevice() && (
-                    <button
+                  <button
                       className="top-menu-item"
                       type="button"
                       onClick={() => void installApp()}
