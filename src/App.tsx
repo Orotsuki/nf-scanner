@@ -61,7 +61,7 @@ export default function App() {
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
-  const [missingFilter, setMissingFilter] = useState<'Todas' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
+  const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
   const topMenuRef = useRef<HTMLDivElement>(null)
   const [darkMode, setDarkMode] = useState(() => {
     try {
@@ -286,8 +286,10 @@ export default function App() {
     const q = search.trim().toLowerCase()
 
     return notes.filter((note) => {
+      const hasMissing = !note.dataEnvio || !note.fornecedor.trim() || note.valor == null
       const matchesMissing =
         missingFilter === 'Todas' ||
+        (missingFilter === 'Com pendência' && hasMissing) ||
         (missingFilter === 'Sem envio' && !note.dataEnvio) ||
         (missingFilter === 'Sem fornecedor' && !note.fornecedor.trim()) ||
         (missingFilter === 'Sem valor' && note.valor == null)
@@ -694,6 +696,7 @@ export default function App() {
                   onChange={(event) => setMissingFilter(event.target.value as typeof missingFilter)}
                 >
                   <option>Todas</option>
+                  <option>Com pendência</option>
                   <option>Sem envio</option>
                   <option>Sem fornecedor</option>
                   <option>Sem valor</option>
