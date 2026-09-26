@@ -1,0 +1,27 @@
+{
+  "name": "NF Scanner",
+  "short_name": "NF Scanner",
+  "description": "Sistema de cadastro e conferência de NF-e e NFS-e.",
+  "lang": "pt-BR",
+  "id": "/nf-scanner/",
+  "start_url": "/nf-scanner/",
+  "scope": "/nf-scanner/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#171c20",
+  "theme_color": "#11171c",
+  "icons": [
+    {
+      "src": "/nf-scanner/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/nf-scanner/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
