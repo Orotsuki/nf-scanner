@@ -1,49 +1,120 @@
-const FOLDER_NAME = 'NF Scanner Backups'
-const TOKEN_PROPERTY = 'BACKUP_TOKEN'
+const DRIVE_FOLDER_NAME = 'NF Scanner Backups'
 const KEEP_DAYS = 30
+const SUPABASE_URL_PROPERTY = 'SUPABASE_URL'
+const SUPABASE_SERVICE_ROLE_KEY_PROPERTY = 'SUPABASE_SERVICE_ROLE_KEY'
 
-function setBackupToken() {
-  PropertiesService.getScriptProperties().setProperty(
-    TOKEN_PROPERTY,
-    'COLOQUE-AQUI-UM-TOKEN-FORTE-E-NAO-PUBLIQUE'
+function backupNow() {
+  const config = getConfig()
+  const timestamp = Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone() || 'America/Sao_Paulo',
+    'yyyy-MM-dd_HH-mm-ss'
   )
+
+  const folder = getOrCreateFolder(DRIVE_FOLDER_NAME)
+  const data = {
+    exported_at: new Date().toISOString(),
+    source: 'nf-scanner',
+    notas_fiscais: fetchAllRows(config.supabaseUrl, config.serviceRoleKey, 'notas_fiscais'),
+    fornecedores: fetchAllRows(config.supabaseUrl, config.serviceRoleKey, 'fornecedores'),
+  }
+
+  folder.createFile(
+    `NF_Scanner_Dados_${timestamp}.json`,
+    JSON.stringify(data, null, 2),
+    MimeType.PLAIN_TEXT
+  )
+
+  const githubZip = UrlFetchApp.fetch(
+    'https://api.github.com/repos/Orotsuki/nf-scanner/zipball/main',
+    {
+      headers: { Accept: 'application/vnd.github+json' },
+      muteHttpExceptions: true,
+    }
+  )
+
+  if (githubZip.getResponseCode() >= 200 && githubZip.getResponseCode() < 300) {
+    const zipBlob = githubZip.getBlob().setName(`NF_Scanner_Sistema_${timestamp}.zip`)
+    folder.createFile(zipBlob)
+  } else {
+    console.log(
+      `Não foi possível criar o backup do sistema. HTTP ${githubZip.getResponseCode()}`
+    )
+  }
+
+  removeOldBackups(folder)
+
+  console.log(`Backup concluído: ${timestamp}`)
 }
 
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents || '{}')
-    const configuredToken = PropertiesService.getScriptProperties().getProperty(TOKEN_PROPERTY) || ''
+function createDailyBackupTrigger() {
+  const handler = 'backupNow'
 
-    if (!configuredToken || body.token !== configuredToken) {
-      return output({ ok: false, error: 'Não autorizado.' }, 401)
+  ScriptApp.getProjectTriggers()
+    .filter((trigger) => trigger.getHandlerFunction() === handler)
+    .forEach((trigger) => ScriptApp.deleteTrigger(trigger))
+
+  ScriptApp.newTrigger(handler)
+    .timeBased()
+    .atHour(23)
+    .everyDays(1)
+    .create()
+
+  console.log('Backup diário configurado para a faixa das 23h.')
+}
+
+function removeDailyBackupTriggers() {
+  ScriptApp.getProjectTriggers()
+    .filter((trigger) => trigger.getHandlerFunction() === 'backupNow')
+    .forEach((trigger) => ScriptApp.deleteTrigger(trigger))
+}
+
+function getConfig() {
+  const properties = PropertiesService.getScriptProperties()
+  const supabaseUrl = properties.getProperty(SUPABASE_URL_PROPERTY)
+  const serviceRoleKey = properties.getProperty(SUPABASE_SERVICE_ROLE_KEY_PROPERTY)
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error(
+      'Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas propriedades do script.'
+    )
+  }
+
+  return { supabaseUrl, serviceRoleKey }
+}
+
+function fetchAllRows(supabaseUrl, serviceRoleKey, table) {
+  const rows = []
+  const pageSize = 1000
+  let offset = 0
+
+  while (true) {
+    const response = UrlFetchApp.fetch(
+      `${supabaseUrl}/rest/v1/${table}?select=*&limit=${pageSize}&offset=${offset}`,
+      {
+        method: 'get',
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+        muteHttpExceptions: true,
+      }
+    )
+
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+      throw new Error(
+        `Falha ao consultar ${table}: HTTP ${response.getResponseCode()} - ${response.getContentText()}`
+      )
     }
 
-    const payload = typeof body.payload === 'string'
-      ? body.payload
-      : JSON.stringify(body.payload ?? {})
+    const page = JSON.parse(response.getContentText())
+    rows.push(...page)
 
-    const folder = getOrCreateFolder(FOLDER_NAME)
-    const timestamp = Utilities.formatDate(
-      new Date(),
-      Session.getScriptTimeZone() || 'America/Sao_Paulo',
-      'yyyy-MM-dd_HH-mm-ss'
-    )
-
-    folder.createFile(
-      `NF_Scanner_Backup_${timestamp}.json`,
-      payload,
-      MimeType.PLAIN_TEXT
-    )
-
-    removeOldBackups(folder)
-
-    return output({ ok: true, timestamp })
-  } catch (error) {
-    return output({
-      ok: false,
-      error: error instanceof Error ? error.message : String(error),
-    }, 500)
+    if (page.length < pageSize) break
+    offset += pageSize
   }
+
+  return rows
 }
 
 function getOrCreateFolder(name) {
@@ -57,14 +128,9 @@ function removeOldBackups(folder) {
 
   while (files.hasNext()) {
     const file = files.next()
+
     if (file.getDateCreated().getTime() < cutoff) {
       file.setTrashed(true)
     }
   }
-}
-
-function output(body, status) {
-  return ContentService
-    .createTextOutput(JSON.stringify(body))
-    .setMimeType(ContentService.MimeType.JSON)
 }
