@@ -3,9 +3,8 @@ import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
 import { loadNotes, saveNotes } from './storage'
-import type { NotaFiscal, NotaStatus } from './types'
+import type { NotaFiscal }
 import {
-  deleteAllCloudNotes,
   deleteCloudNote,
   fetchCloudNotes,
   fetchSuppliers,
@@ -16,8 +15,10 @@ import {
   subscribeToAuthChanges,
   subscribeToCloudChanges,
   updateCloudNote,
+  updateCloudNotesDataEnvio,
   upsertCloudNote,
   upsertSupplier,
+  deleteSupplier,
 } from './cloud'
 import { isSupabaseConfigured } from './supabase'
 import { signInUsername } from './auth'
@@ -57,6 +58,9 @@ export default function App() {
   const [dashboardOpen, setDashboardOpen] = useState(false)
   const [supplierManagementOpen, setSupplierManagementOpen] = useState(false)
   const [topMenuOpen, setTopMenuOpen] = useState(false)
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
+  const [bulkSendDate, setBulkSendDate] = useState('')
+  const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
   const [darkMode, setDarkMode] = useState(() => {
     try {
       return localStorage.getItem('nf-scanner:dark-mode') === 'true'
@@ -64,7 +68,6 @@ export default function App() {
       return false
     }
   })
-  const [statusFilter, setStatusFilter] = useState<'Todos' | NotaStatus>('Todos')
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -234,6 +237,10 @@ export default function App() {
     }
 
     setNotes((current) => [note, ...current])
+    setRecentNoteId(note.id)
+    window.setTimeout(() => {
+      setRecentNoteId((current) => current === note.id ? null : current)
+    }, 4500)
 
     if (session && isSupabaseConfigured) {
       try {
@@ -265,9 +272,6 @@ export default function App() {
     const q = search.trim().toLowerCase()
 
     return notes.filter((note) => {
-      const matchesStatus = statusFilter === 'Todos' || note.status === statusFilter
-      if (!matchesStatus) return false
-
       if (!q) return true
 
       return (
@@ -278,7 +282,61 @@ export default function App() {
         note.chaveAcesso.includes(q)
       )
     })
-  }, [notes, search, statusFilter])
+  }, [notes, search])
+
+  const allFilteredSelected =
+    filteredNotes.length > 0 &&
+    filteredNotes.every((note) => selectedNoteIds.has(note.id))
+
+  function toggleNoteSelection(id: string): void {
+    setSelectedNoteIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllFiltered(): void {
+    setSelectedNoteIds((current) => {
+      const next = new Set(current)
+      if (allFilteredSelected) {
+        filteredNotes.forEach((note) => next.delete(note.id))
+      } else {
+        filteredNotes.forEach((note) => next.add(note.id))
+      }
+      return next
+    })
+  }
+
+  async function applyBulkSendDate(): Promise<void> {
+    if (!bulkSendDate || !selectedNoteIds.size) return
+
+    const ids = [...selectedNoteIds]
+
+    try {
+      await updateCloudNotesDataEnvio(ids, bulkSendDate)
+      setNotes((current) =>
+        current.map((note) =>
+          selectedNoteIds.has(note.id)
+            ? { ...note, dataEnvio: bulkSendDate }
+            : note,
+        ),
+      )
+      setSelectedNoteIds(new Set())
+      setBulkSendDate('')
+      setToast({
+        type: 'success',
+        text: 'Data de envio aplicada a ' + ids.length + ' NF' + (ids.length === 1 ? '' : 's') + '.',
+      })
+    } catch {
+      setToast({
+        type: 'error',
+        text: 'Não foi possível aplicar a data de envio.',
+      })
+    }
+  }
+
 
   async function persistNote(note: NotaFiscal): Promise<void> {
     setNotes((current) => current.map((item) => item.id === note.id ? note : item))
@@ -320,25 +378,6 @@ export default function App() {
     }
 
     setNotes((current) => current.filter((item) => item.id !== id))
-  }
-
-  async function clearNotes() {
-    if (!notes.length) return
-
-    if (!window.confirm('Excluir todas as notas armazenadas?')) return
-
-    if (session && isSupabaseConfigured) {
-      try {
-        await deleteAllCloudNotes()
-      } catch {
-        setSyncStatus('offline')
-        setToast({ type: 'error', text: 'Não foi possível limpar as notas da nuvem.' })
-        return
-      }
-    }
-
-    setNotes([])
-    setToast({ type: 'success', text: 'Lista limpa.' })
   }
 
   async function handleSignOut() {
