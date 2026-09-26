@@ -14,6 +14,7 @@ function normalizeNote(value: Partial<NotaFiscal>): NotaFiscal {
     chaveAcesso: value.chaveAcesso ?? '',
     dataCadastro: value.dataCadastro ?? legacy.dataLeitura ?? new Date().toISOString(),
     dataEnvio: value.dataEnvio ?? legacy.dataControladoria ?? null,
+    syncPending: value.syncPending ?? false,
   }
 }
 
