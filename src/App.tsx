@@ -127,7 +127,14 @@ export default function App() {
 
         if (cancelled) return
 
-        setNotes(cloudNotes)
+        const pendingLocal = loadNotes().filter((note) => note.syncPending)
+        const cloudKeys = new Set(cloudNotes.map((note) => note.chaveAcesso))
+        const mergedNotes = [
+          ...pendingLocal.filter((note) => !cloudKeys.has(note.chaveAcesso)),
+          ...cloudNotes,
+        ]
+
+        setNotes(mergedNotes)
         setSupplierMap(toSupplierMap(suppliers))
         setSupplierRecords(suppliers)
         setSyncStatus('online')
@@ -140,9 +147,14 @@ export default function App() {
       setSyncStatus('connecting')
 
       try {
-        await mergeLocalNotesIntoCloud(loadNotes())
+        const localNotes = loadNotes()
+        await mergeLocalNotesIntoCloud(localNotes)
 
         if (cancelled) return
+
+        saveNotes(localNotes.map((note) =>
+          note.syncPending ? { ...note, syncPending: false } : note,
+        ))
 
         await refreshFromCloud()
 
@@ -151,6 +163,17 @@ export default function App() {
         unsubscribe = subscribeToCloudChanges(session.user.id, () => {
           void refreshFromCloud()
         })
+
+        const refreshHandler = () => {
+          void refreshFromCloud()
+        }
+        window.addEventListener('nf-scanner-refresh', refreshHandler)
+
+        const previousUnsubscribe = unsubscribe
+        unsubscribe = () => {
+          previousUnsubscribe()
+          window.removeEventListener('nf-scanner-refresh', refreshHandler)
+        }
       } catch {
         if (!cancelled) {
           setSyncStatus('offline')
@@ -254,6 +277,7 @@ export default function App() {
       valor: null,
       dataCadastro: new Date().toISOString(),
       dataEnvio: null,
+      syncPending: true,
     }
 
     setNotes((current) => [note, ...current])
@@ -265,6 +289,11 @@ export default function App() {
     if (session && isSupabaseConfigured) {
       try {
         await upsertCloudNote(note)
+        setNotes((current) =>
+          current.map((item) =>
+            item.id === note.id ? { ...item, syncPending: false } : item,
+          ),
+        )
         setSyncStatus('online')
       } catch {
         setSyncStatus('offline')
@@ -371,20 +400,24 @@ export default function App() {
 
 
   async function persistNote(note: NotaFiscal): Promise<void> {
-    setNotes((current) => current.map((item) => item.id === note.id ? note : item))
+    const pendingNote = { ...note, syncPending: true }
+    setNotes((current) => current.map((item) => item.id === note.id ? pendingNote : item))
 
     if (!session || !isSupabaseConfigured) return
 
     try {
-      if (note.fornecedor.trim()) {
-        await upsertSupplier(note.cnpjEmitente, note.fornecedor)
+      if (pendingNote.fornecedor.trim()) {
+        await upsertSupplier(pendingNote.cnpjEmitente, pendingNote.fornecedor)
         setSupplierMap((current) => ({
           ...current,
-          [note.cnpjEmitente]: note.fornecedor.trim(),
+          [pendingNote.cnpjEmitente]: pendingNote.fornecedor.trim(),
         }))
       }
 
-      await updateCloudNote(note)
+      await updateCloudNote(pendingNote)
+      setNotes((current) => current.map((item) =>
+        item.id === note.id ? { ...item, syncPending: false } : item,
+      ))
       setSyncStatus('online')
     } catch {
       setSyncStatus('offline')
@@ -394,6 +427,7 @@ export default function App() {
       })
     }
   }
+
 
   async function removeNote(id: string) {
     const note = notes.find((item) => item.id === id)
