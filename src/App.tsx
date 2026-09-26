@@ -32,6 +32,11 @@ import {
 
 type SyncStatus = 'local' | 'connecting' | 'online' | 'offline'
 
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(pointer: coarse)').matches
+}
+
 function isDesktopDevice(): boolean {
   if (typeof window === 'undefined') return false
 
@@ -59,6 +64,7 @@ export default function App() {
   const [supplierManagementOpen, setSupplierManagementOpen] = useState(false)
   const [topMenuOpen, setTopMenuOpen] = useState(false)
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
+  const lastSelectedNoteId = useRef<string | null>(null)
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
   const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
@@ -286,13 +292,13 @@ export default function App() {
     const q = search.trim().toLowerCase()
 
     return notes.filter((note) => {
-      const hasMissing = !note.dataEnvio || !note.fornecedor.trim() || note.valor == null
+      const hasMissing = !note.dataEnvio || !note.fornecedor.trim() || note.valor == null || note.valor <= 0
       const matchesMissing =
         missingFilter === 'Todas' ||
         (missingFilter === 'Com pendência' && hasMissing) ||
         (missingFilter === 'Sem envio' && !note.dataEnvio) ||
         (missingFilter === 'Sem fornecedor' && !note.fornecedor.trim()) ||
-        (missingFilter === 'Sem valor' && note.valor == null)
+        (missingFilter === 'Sem valor' && (note.valor == null || note.valor <= 0))
 
       if (!matchesMissing) return false
       if (!q) return true
@@ -309,27 +315,27 @@ export default function App() {
 
 
 
-  const allFilteredSelected =
-    filteredNotes.length > 0 &&
-    filteredNotes.every((note) => selectedNoteIds.has(note.id))
-
-  function toggleNoteSelection(id: string): void {
+  function toggleNoteSelection(id: string, shiftKey = false): void {
     setSelectedNoteIds((current) => {
       const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const currentIndex = filteredNotes.findIndex((note) => note.id === id)
+      const anchorIndex = lastSelectedNoteId.current
+        ? filteredNotes.findIndex((note) => note.id === lastSelectedNoteId.current)
+        : -1
 
-  function toggleAllFiltered(): void {
-    setSelectedNoteIds((current) => {
-      const next = new Set(current)
-      if (allFilteredSelected) {
-        filteredNotes.forEach((note) => next.delete(note.id))
+      if (shiftKey && anchorIndex >= 0 && currentIndex >= 0) {
+        const start = Math.min(anchorIndex, currentIndex)
+        const end = Math.max(anchorIndex, currentIndex)
+        for (let index = start; index <= end; index += 1) {
+          next.add(filteredNotes[index].id)
+        }
+      } else if (next.has(id)) {
+        next.delete(id)
       } else {
-        filteredNotes.forEach((note) => next.add(note.id))
+        next.add(id)
       }
+
+      lastSelectedNoteId.current = id
       return next
     })
   }
@@ -349,6 +355,7 @@ export default function App() {
         ),
       )
       setSelectedNoteIds(new Set())
+      lastSelectedNoteId.current = null
       setBulkSendDate('')
       setToast({
         type: 'success',
@@ -416,10 +423,20 @@ export default function App() {
   }
 
   async function installApp() {
-    if (!installPrompt) return
-    await installPrompt.prompt()
-    await installPrompt.userChoice
-    setInstallPrompt(null)
+    if (installPrompt) {
+      await installPrompt.prompt()
+      await installPrompt.userChoice
+      setInstallPrompt(null)
+      return
+    }
+
+    setTopMenuOpen(false)
+    setToast({
+      type: 'warning',
+      text: /iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? 'No Safari: Compartilhar → Adicionar à Tela de Início.'
+        : 'No Chrome: menu ⋮ → Adicionar à tela inicial ou Instalar aplicativo.',
+    })
   }
 
   if (isSupabaseConfigured && authLoading) {
@@ -483,7 +500,6 @@ export default function App() {
     <div className={`app-shell ${darkMode ? 'dark-theme' : ''}`}>
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">NF</div>
           <div>
             <div className="brand-title">NF Scanner</div>
             <div className="brand-subtitle">Leitura rápida de NF-e</div>
@@ -579,6 +595,20 @@ export default function App() {
                       <small>Consultar e atualizar cadastros</small>
                     </span>
                   </button>
+
+                  {isMobileDevice() && (
+                    <button
+                      className="top-menu-item"
+                      type="button"
+                      onClick={() => void installApp()}
+                    >
+                      <span className="top-menu-icon">⇩</span>
+                      <span className="top-menu-text">
+                        <strong>Instalar aplicativo</strong>
+                        <small>Adicionar à tela inicial do celular</small>
+                      </span>
+                    </button>
+                  )}
 
                   <button
                     className="top-menu-item"
@@ -702,13 +732,24 @@ export default function App() {
                   <option>Sem valor</option>
                 </select>
               </div>
-              <div className="search-wrap">
-                <span>⌕</span>
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
-                />
+              <div className="list-search-actions">
+                <div className="search-wrap">
+                  <span>⌕</span>
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="refresh-btn"
+                  onClick={() => window.dispatchEvent(new Event('nf-scanner-refresh'))}
+                  aria-label="Atualizar notas"
+                  title="Atualizar"
+                >
+                  ↻
+                </button>
               </div>
             </div>
           </div>
@@ -747,14 +788,7 @@ export default function App() {
             <table>
               <thead>
                 <tr>
-                  <th className="check-cell">
-                    <input
-                      type="checkbox"
-                      checked={allFilteredSelected}
-                      onChange={toggleAllFiltered}
-                      aria-label="Selecionar todas as notas exibidas"
-                    />
-                  </th>
+                  <th className="check-cell" aria-label="Selecionar" />
                   <th>Número da NF</th>
                   <th>CNPJ do emitente</th>
                   <th>Fornecedor</th>
@@ -772,7 +806,7 @@ export default function App() {
                     note={note}
                     recent={recentNoteId === note.id}
                     selected={selectedNoteIds.has(note.id)}
-                    onSelect={() => toggleNoteSelection(note.id)}
+                    onSelect={(shiftKey) => toggleNoteSelection(note.id, shiftKey)}
                     onSave={persistNote}
                     onDelete={removeNote}
                   />
@@ -1042,7 +1076,7 @@ function EditableNoteRow({
   note: NotaFiscal
   recent: boolean
   selected: boolean
-  onSelect: () => void
+  onSelect: (shiftKey: boolean) => void
   onSave: (note: NotaFiscal) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }) {
@@ -1063,7 +1097,7 @@ function EditableNoteRow({
         <input
           type="checkbox"
           checked={selected}
-          onChange={onSelect}
+          onClick={(event) => onSelect(event.shiftKey)}
           aria-label={`Selecionar NF ${note.numeroNF}`}
         />
       </td>
