@@ -28,6 +28,7 @@ function cloudToNote(row: Record<string, unknown>): NotaFiscal {
     chaveAcesso: String(row.chave_acesso ?? ''),
     dataCadastro: String(row.data_cadastro ?? new Date().toISOString()),
     dataEnvio: row.data_envio ? String(row.data_envio) : null,
+    syncPending: false,
   }
 }
 
@@ -175,10 +176,14 @@ export async function deleteAllCloudNotes(): Promise<void> {
 export async function mergeLocalNotesIntoCloud(localNotes: NotaFiscal[]): Promise<void> {
   if (!localNotes.length) return
 
+  const pendingNotes = localNotes.filter((note) => note.syncPending)
+
+  if (!pendingNotes.length) return
+
   const remoteNotes = await fetchCloudNotes()
   const remoteKeys = new Set(remoteNotes.map((note) => note.chaveAcesso))
 
-  for (const note of localNotes) {
+  for (const note of pendingNotes) {
     if (note.fornecedor.trim()) {
       await upsertSupplier(note.cnpjEmitente, note.fornecedor)
     }
@@ -205,7 +210,6 @@ export function subscribeToCloudChanges(
         event: '*',
         schema: 'public',
         table: 'notas_fiscais',
-        filter: `user_id=eq.${userId}`,
       },
       callback,
     )
@@ -215,7 +219,6 @@ export function subscribeToCloudChanges(
         event: '*',
         schema: 'public',
         table: 'fornecedores',
-        filter: `user_id=eq.${userId}`,
       },
       callback,
     )
