@@ -1265,7 +1265,14 @@ function UserManagement({
   }
 
   return (
-    <div className="modal-backdrop">
+    <div
+      className="modal-backdrop"
+ <div
+        className="user-management"
+        onMouseDown={(event) => event.stopPropagation()}
+      >      if (event.target === event.currentTarget) onClose()
+      }}
+    >
       <div className="user-management">
         <div className="user-management-header">
           <div>
