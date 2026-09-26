@@ -422,9 +422,37 @@ export default function App() {
 
   const username = String(session?.user.user_metadata?.username ?? 'usuário')
   const isAdmin = session?.user.app_metadata?.role === 'admin'
-  const summaryFoot = session
-    ? `Usuário: ${username} • ${syncLabel}`
-    : 'A nuvem ainda não foi configurada neste projeto.'
+  const recentNote = recentNoteId ? notes.find((note) => note.id === recentNoteId) ?? null : null
+
+  async function handleSupplierSave(cnpj: string, nome: string): Promise<void> {
+    await upsertSupplier(cnpj, nome)
+    setSupplierMap((current) => ({ ...current, [cnpj]: nome }))
+    setSupplierRecords((current) => {
+      const existing = current.find((item) => item.cnpj === cnpj)
+      if (existing) {
+        return current.map((item) => item.cnpj === cnpj ? { ...item, nome } : item)
+      }
+
+      return [...current, { id: crypto.randomUUID(), cnpj, nome }].sort((a, b) => a.nome.localeCompare(b.nome))
+    })
+    setToast({ type: 'success', text: 'Fornecedor atualizado.' })
+  }
+
+  async function handleSupplierDelete(id: string): Promise<void> {
+    const supplier = supplierRecords.find((item) => item.id === id)
+    if (!supplier) return
+
+    if (!window.confirm(`Remover o fornecedor "${supplier.nome}" da base?`)) return
+
+    await deleteSupplier(id)
+    setSupplierRecords((current) => current.filter((item) => item.id !== id))
+    setSupplierMap((current) => {
+      const next = { ...current }
+      delete next[supplier.cnpj]
+      return next
+    })
+    setToast({ type: 'success', text: 'Fornecedor removido da base.' })
+  }
 
   return (
     <div className={`app-shell ${darkMode ? 'dark-theme' : ''}`}>
@@ -605,16 +633,28 @@ export default function App() {
               </div>
             )}
           </div>
-
-          <aside className="summary-card">
-            <div className="summary-label">Notas fiscais cadastradas</div>
-            <div className="summary-number">{notes.length}</div>
-            <div className="summary-foot">{summaryFoot}</div>
-            <div className="summary-actions">
-              <button className="btn ghost full" disabled={!notes.length} onClick={() => void clearNotes()}>Limpar tudo</button>
-            </div>
-          </aside>
         </section>
+
+        {recentNote && (
+          <div className="recent-note-banner" role="status">
+            <div className="recent-note-icon">✓</div>
+            <div className="recent-note-content">
+              <strong>NF cadastrada com sucesso</strong>
+              <span>
+                Nº {recentNote.numeroNF} • CNPJ {recentNote.cnpjEmitente}
+                {recentNote.fornecedor ? ` • ${recentNote.fornecedor}` : ' • Fornecedor pendente'}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="recent-note-close"
+              onClick={() => setRecentNoteId(null)}
+              aria-label="Fechar aviso"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <section className="list-panel">
           <div className="section-heading compact">
@@ -622,38 +662,64 @@ export default function App() {
               <h2>Notas fiscais cadastradas:</h2>
               <p>{filteredNotes.length} de {notes.length} registros</p>
             </div>
-            <div className="list-tools">
-              <div className="filter-wrap">
-                <label htmlFor="status-filter">Status</label>
-                <select
-                  id="status-filter"
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value as 'Todos' | NotaStatus)}
-                >
-                  <option>Todos</option>
-                  <option>Pendente</option>
-                  <option>Conferida</option>
-                  <option>Finalizada</option>
-                </select>
-              </div>
-              <div className="search-wrap">
-                <span>⌕</span>
-                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Pesquisar NF, CNPJ, fornecedor ou chave" />
-              </div>
+            <div className="search-wrap">
+              <span>⌕</span>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
+              />
             </div>
           </div>
+
+          {selectedNoteIds.size > 0 && (
+            <div className="bulk-toolbar">
+              <div>
+                <strong>{selectedNoteIds.size}</strong> NF{selectedNoteIds.size === 1 ? '' : 's'} selecionada{selectedNoteIds.size === 1 ? '' : 's'}
+              </div>
+              <div className="bulk-actions">
+                <label htmlFor="bulk-send-date">Data de envio</label>
+                <input
+                  id="bulk-send-date"
+                  type="date"
+                  value={bulkSendDate}
+                  onChange={(event) => setBulkSendDate(event.target.value)}
+                />
+                <button
+                  className="btn primary"
+                  disabled={!bulkSendDate}
+                  onClick={() => void applyBulkSendDate()}
+                >
+                  Aplicar data
+                </button>
+                <button
+                  className="btn ghost"
+                  onClick={() => setSelectedNoteIds(new Set())}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th className="check-cell">
+                    <input
+                      type="checkbox"
+                      checked={allFilteredSelected}
+                      onChange={toggleAllFiltered}
+                      aria-label="Selecionar todas as notas exibidas"
+                    />
+                  </th>
                   <th>Número da NF</th>
                   <th>CNPJ do emitente</th>
                   <th>Fornecedor</th>
                   <th>Valor</th>
-                  <th>Status</th>
-                  <th>Cadastro</th>
-                  <th>Controladoria</th>
+                  <th>Data Cadastro</th>
+                  <th>Data Envio</th>
                   <th>Chave de acesso</th>
                   <th aria-label="Ações" />
                 </tr>
@@ -663,6 +729,9 @@ export default function App() {
                   <EditableNoteRow
                     key={note.id}
                     note={note}
+                    recent={recentNoteId === note.id}
+                    selected={selectedNoteIds.has(note.id)}
+                    onSelect={() => toggleNoteSelection(note.id)}
                     onSave={persistNote}
                     onDelete={removeNote}
                   />
@@ -670,7 +739,7 @@ export default function App() {
                 {!filteredNotes.length && (
                   <tr>
                     <td colSpan={9} className="empty-row">
-                      {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi lida ainda.'}
+                      {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi cadastrada ainda.'}
                     </td>
                   </tr>
                 )}
@@ -687,11 +756,8 @@ export default function App() {
       {supplierManagementOpen && (
         <SupplierManagement
           suppliers={supplierRecords}
-          onSave={async (cnpj, nome) => {
-            await upsertSupplier(cnpj, nome)
-            setSupplierMap((current) => ({ ...current, [cnpj]: nome }))
-            setToast({ type: 'success', text: 'Fornecedor atualizado.' })
-          }}
+          onSave={handleSupplierSave}
+          onDelete={handleSupplierDelete}
           onClose={() => setSupplierManagementOpen(false)}
         />
       )}
@@ -891,10 +957,16 @@ function SupplierRow({
 
 function EditableNoteRow({
   note,
+  recent,
+  selected,
+  onSelect,
   onSave,
   onDelete,
 }: {
   note: NotaFiscal
+  recent: boolean
+  selected: boolean
+  onSelect: () => void
   onSave: (note: NotaFiscal) => Promise<void>
   onDelete: (id: string) => Promise<void>
 }) {
@@ -910,7 +982,15 @@ function EditableNoteRow({
   }, [note.valor])
 
   return (
-    <tr>
+    <tr className={recent ? 'new-note-row' : ''}>
+      <td className="check-cell">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          aria-label={`Selecionar NF ${note.numeroNF}`}
+        />
+      </td>
       <td><strong>{note.numeroNF}</strong></td>
       <td>{note.cnpjEmitente}</td>
       <td>
@@ -950,29 +1030,16 @@ function EditableNoteRow({
           }}
         />
       </td>
-      <td>
-        <select
-          className={`editable-cell-select status-${note.status.toLowerCase()}`}
-          value={note.status}
-          onChange={(event) => void onSave({ ...note, status: event.target.value as NotaStatus })}
-          aria-label={`Status da NF ${note.numeroNF}`}
-        >
-          <option>Pendente</option>
-          <option>Conferida</option>
-          <option>Finalizada</option>
-        </select>
-      </td>
       <td className="date-cell">{formatDateTime(note.dataCadastro)}</td>
       <td>
         <input
           className="editable-cell-input control-date-input"
           type="date"
-          value={note.dataControladoria ?? ''}
-          aria-label={`Data de entrega à controladoria da NF ${note.numeroNF}`}
+          value={note.dataEnvio ?? ''}
+          aria-label={`Data de envio à controladoria da NF ${note.numeroNF}`}
           onChange={(event) => void onSave({
             ...note,
-            dataControladoria: event.target.value || null,
-            status: event.target.value && note.status === 'Conferida' ? 'Finalizada' : note.status,
+            dataEnvio: event.target.value || null,
           })}
         />
       </td>
