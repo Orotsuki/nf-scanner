@@ -1,7 +1,7 @@
 const DRIVE_FOLDER_NAME = 'NF Scanner Backups'
 const KEEP_DAYS = 30
 const SUPABASE_URL_PROPERTY = 'SUPABASE_URL'
-const SUPABASE_SERVICE_ROLE_KEY_PROPERTY = 'SUPABASE_SERVICE_ROLE_KEY'
+const SUPABASE_SECRET_KEY_PROPERTY = 'SUPABASE_SECRET_KEY'
 
 function backupNow() {
   const config = getConfig()
@@ -72,11 +72,11 @@ function removeDailyBackupTriggers() {
 function getConfig() {
   const properties = PropertiesService.getScriptProperties()
   const supabaseUrl = properties.getProperty(SUPABASE_URL_PROPERTY)
-  const serviceRoleKey = properties.getProperty(SUPABASE_SERVICE_ROLE_KEY_PROPERTY)
+  const serviceRoleKey = properties.getProperty(SUPABASE_SECRET_KEY_PROPERTY)
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      'Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nas propriedades do script.'
+      'Configure SUPABASE_URL e SUPABASE_SECRET_KEY nas propriedades do script.'
     )
   }
 
