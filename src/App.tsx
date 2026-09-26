@@ -32,11 +32,6 @@ import {
 
 type SyncStatus = 'local' | 'connecting' | 'online' | 'offline'
 
-function isMobileDevice(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(pointer: coarse)').matches
-}
-
 function isDesktopDevice(): boolean {
   if (typeof window === 'undefined') return false
 
