@@ -1552,3 +1552,19 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 .check-cell input {
   cursor: pointer;
 }
+
+
+.section-heading.compact {
+  justify-content: flex-start;
+}
+.section-heading.compact .list-tools {
+  margin-left: 18px;
+}
+@media (max-width: 980px) {
+  .section-heading.compact {
+    align-items: stretch;
+  }
+  .section-heading.compact .list-tools {
+    margin-left: 0;
+  }
+}
