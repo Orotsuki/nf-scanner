@@ -1,19 +1,35 @@
-# Backup gratuito no Google Drive
+# Backup diário do NF Scanner no Google Drive
 
-O NF Scanner pode usar o Google Apps Script como uma pequena ponte para gravar o backup no Google Drive sem depender do conector do ChatGPT.
+Este script roda na sua conta Google e salva dois arquivos por execução:
 
-## Como funciona
+- um JSON com notas fiscais e fornecedores do Supabase;
+- um ZIP com o estado do repositório GitHub (sistema).
 
-1. Criar um projeto em Google Apps Script.
-2. Colar o conteúdo de `Code.gs`.
-3. Alterar o valor de `BACKUP_TOKEN` na função `setBackupToken()` para um token forte.
-4. Executar `setBackupToken()` uma vez e autorizar o acesso ao Drive.
-5. Fazer **Implantar > Nova implantação > App da Web**.
-6. Configurar para executar como a sua conta e fornecer acesso conforme a configuração escolhida.
-7. O projeto retornará uma URL `/exec`.
+Ele usa um trigger de tempo do Google Apps Script para executar diariamente na faixa das 23h e mantém os últimos 30 dias de backups.
 
-O sistema será configurado depois para enviar o backup para essa URL.
+## Configuração
 
-O script cria a pasta **NF Scanner Backups**, grava um JSON por backup e remove arquivos com mais de 30 dias.
+1. Acesse `script.google.com` com a mesma conta Google que deve receber os backups.
+2. Crie um projeto de **Script**.
+3. Abra o arquivo `Code.gs` e substitua o conteúdo pelo arquivo `backup/google-apps-script/Code.gs` deste repositório.
+4. No Apps Script, abra **Configurações do projeto > Propriedades do script**.
+5. Crie a propriedade `SUPABASE_URL` com o endereço do projeto Supabase.
+6. Crie a propriedade `SUPABASE_SECRET_KEY` com a **Secret key** do Supabase.
+7. Salve.
+8. Em **Configurações do projeto**, confirme o fuso horário `America/Sao_Paulo` / Brasília.
+9. No editor, selecione a função `backupNow` e clique em **Executar** uma vez. Autorize o acesso ao Google Drive quando solicitado.
+10. Abra o Google Drive e confirme a criação da pasta **NF Scanner Backups** e dos arquivos de backup.
+11. Volte ao Apps Script, selecione `createDailyBackupTrigger` e execute uma vez.
+12. Em **Acionadores**, confirme o trigger diário de `backupNow`.
 
-O Google oferece 15 GB de armazenamento gratuito por conta Google, compartilhados entre Drive, Gmail e Google Fotos. O Apps Script possui quotas diárias, mas o volume esperado do NF Scanner é muito pequeno para esse tipo de rotina.
+## Segurança
+
+A Secret key do Supabase é uma credencial de backend com acesso elevado. Ela deve ficar apenas nas Propriedades do script e nunca no GitHub, no código do NF Scanner ou em mensagens.
+
+## Observação sobre o horário
+
+O trigger `atHour(23).everyDays(1)` executa na faixa das 23h; o Google pode deslocar o minuto exato dentro dessa janela.
+
+## Retenção
+
+O script mantém aproximadamente 30 dias. Backups mais antigos são movidos para a lixeira do Google Drive.
