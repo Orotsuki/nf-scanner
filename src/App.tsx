@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
 import { loadNotes, saveNotes } from './storage'
-import type { NotaFiscal }
+import type { NotaFiscal } from './types'
 import {
   deleteCloudNote,
   fetchCloudNotes,
