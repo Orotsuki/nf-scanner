@@ -1473,3 +1473,82 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     margin-left: 4px;
   }
 }
+
+
+.dark-theme .user-row {
+  background: #262e34;
+  border-color: #3a464f;
+}
+.dark-theme .user-row .user-name {
+  color: #eef2f3;
+}
+.dark-theme .user-row .user-meta {
+  color: #aab5bd;
+}
+.dark-theme .user-row .user-reset input {
+  background: #1d2429;
+  color: #eef2f3;
+  border-color: #43505a;
+}
+.dark-theme .user-row .btn.secondary {
+  background: #293137;
+  color: #edf2f4;
+  border-color: #43505a;
+}
+.dark-theme .user-row .btn.ghost {
+  background: #303940;
+  color: #d7dfe3;
+}
+.dark-theme .user-create-box {
+  background: #262e34;
+  border-color: #3a464f;
+}
+.dark-theme .auth-message {
+  background: #272f35;
+  color: #dfe7eb;
+  border-color: #3b474f;
+}
+.dark-theme .supplier-list-head {
+  color: #aeb9c0;
+}
+.list-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.list-search-actions .search-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.refresh-btn {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: white;
+  color: #334155;
+  font-size: 22px;
+  line-height: 1;
+}
+.refresh-btn:hover {
+  background: #f8fafc;
+}
+.dark-theme .refresh-btn {
+  border-color: #43505a;
+  background: #1d2429;
+  color: #eef2f3;
+}
+.dark-theme .refresh-btn:hover {
+  background: #293137;
+}
+.check-cell {
+  width: 42px;
+  min-width: 42px;
+}
+.check-cell input {
+  cursor: pointer;
+}
