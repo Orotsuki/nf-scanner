@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js'
-import type { NotaFiscal, NotaStatus } from './types'
+import type { NotaFiscal } from './types'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export type SupplierRecord = {
@@ -18,10 +18,6 @@ function client() {
   return supabase
 }
 
-function normalizeStatus(value: unknown): NotaStatus {
-  return value === 'Conferida' || value === 'Finalizada' ? value : 'Pendente'
-}
-
 function cloudToNote(row: Record<string, unknown>): NotaFiscal {
   return {
     id: String(row.id),
@@ -31,8 +27,7 @@ function cloudToNote(row: Record<string, unknown>): NotaFiscal {
     valor: typeof row.valor === 'number' ? row.valor : row.valor == null ? null : Number(row.valor),
     chaveAcesso: String(row.chave_acesso ?? ''),
     dataCadastro: String(row.data_cadastro ?? new Date().toISOString()),
-    dataControladoria: row.data_controladoria ? String(row.data_controladoria) : null,
-    status: normalizeStatus(row.status),
+    dataEnvio: row.data_envio ? String(row.data_envio) : null,
   }
 }
 
@@ -134,8 +129,7 @@ export async function upsertCloudNote(note: NotaFiscal): Promise<void> {
         valor: note.valor,
         chave_acesso: note.chaveAcesso,
         data_cadastro: note.dataCadastro,
-        data_controladoria: note.dataControladoria,
-        status: note.status,
+        data_envio: note.dataEnvio,
       },
       { onConflict: 'user_id,chave_acesso' },
     )
@@ -153,8 +147,7 @@ export async function updateCloudNote(note: NotaFiscal): Promise<void> {
       valor: note.valor,
       chave_acesso: note.chaveAcesso,
       data_cadastro: note.dataCadastro,
-      data_controladoria: note.dataControladoria,
-      status: note.status,
+      data_envio: note.dataEnvio,
     })
     .eq('id', note.id)
 
@@ -231,4 +224,25 @@ export function subscribeToCloudChanges(
   return () => {
     void supabaseClient.removeChannel(channel)
   }
+}
+
+
+export async function updateCloudNotesDataEnvio(ids: string[], dataEnvio: string | null): Promise<void> {
+  if (!ids.length) return
+
+  const { error } = await client()
+    .from('notas_fiscais')
+    .update({ data_envio: dataEnvio })
+    .in('id', ids)
+
+  if (error) throw error
+}
+
+export async function deleteSupplier(id: string): Promise<void> {
+  const { error } = await client()
+    .from('fornecedores')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw error
 }
