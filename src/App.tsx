@@ -778,21 +778,22 @@ function DashboardModal({
   notes: NotaFiscal[]
   onClose: () => void
 }) {
-  const totals = notes.reduce(
-    (acc, note) => {
-      acc.total += 1
-      if (note.status === 'Pendente') acc.pending += 1
-      if (note.status === 'Conferida') acc.checked += 1
-      if (note.status === 'Finalizada') acc.finalized += 1
-      if (typeof note.valor === 'number') acc.value += note.valor
-      return acc
-    },
-    { total: 0, pending: 0, checked: 0, finalized: 0, value: 0 },
-  )
+  const totalValue = notes.reduce((total, note) => total + (typeof note.valor === 'number' ? note.valor : 0), 0)
+  const withoutSupplier = notes.filter((note) => !note.fornecedor.trim()).length
+  const withoutValue = notes.filter((note) => note.valor == null).length
+  const sentToController = notes.filter((note) => note.dataEnvio).length
 
   return (
-    <div className="modal-backdrop">
-      <div className="dashboard-modal">
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <div
+        className="dashboard-modal"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="user-management-header">
           <div>
             <h2>Dashboard</h2>
@@ -804,25 +805,25 @@ function DashboardModal({
         <div className="dashboard-grid">
           <div className="dashboard-card">
             <span>Notas cadastradas</span>
-            <strong>{totals.total}</strong>
+            <strong>{notes.length}</strong>
           </div>
-          <div className="dashboard-card pending">
-            <span>Pendentes</span>
-            <strong>{totals.pending}</strong>
+          <div className="dashboard-card">
+            <span>Sem fornecedor</span>
+            <strong>{withoutSupplier}</strong>
+          </div>
+          <div className="dashboard-card">
+            <span>Sem valor</span>
+            <strong>{withoutValue}</strong>
           </div>
           <div className="dashboard-card checked">
-            <span>Conferidas</span>
-            <strong>{totals.checked}</strong>
-          </div>
-          <div className="dashboard-card finalized">
-            <span>Finalizadas</span>
-            <strong>{totals.finalized}</strong>
+            <span>Enviadas à controladoria</span>
+            <strong>{sentToController}</strong>
           </div>
         </div>
 
         <div className="dashboard-value">
           <span>Valor total cadastrado</span>
-          <strong>{formatMoney(totals.value)}</strong>
+          <strong>{formatMoney(totalValue)}</strong>
         </div>
       </div>
     </div>
@@ -833,10 +834,12 @@ function SupplierManagement({
   onClose,
   suppliers,
   onSave,
+  onDelete,
 }: {
   onClose: () => void
   suppliers: Array<{ id: string; cnpj: string; nome: string }>
   onSave: (cnpj: string, nome: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
 }) {
   const [supplierRows, setSupplierRows] = useState(suppliers)
   const [addOpen, setAddOpen] = useState(false)
@@ -855,7 +858,9 @@ function SupplierManagement({
   async function saveNew() {
     const cnpj = newCnpj.replace(/\D/g, '')
     if (cnpj.length < 11 || cnpj.length > 14 || !newName.trim()) return
+
     await onSave(cnpj, newName.trim())
+
     setSupplierRows((current) => {
       const existing = current.find((item) => item.cnpj === cnpj)
       if (existing) {
@@ -863,14 +868,28 @@ function SupplierManagement({
       }
       return [...current, { id: crypto.randomUUID(), cnpj, nome: newName.trim() }].sort((a, b) => a.nome.localeCompare(b.nome))
     })
+
     setNewCnpj('')
     setNewName('')
     setAddOpen(false)
   }
 
+  async function removeSupplier(id: string) {
+    await onDelete(id)
+    setSupplierRows((current) => current.filter((item) => item.id !== id))
+  }
+
   return (
-    <div className="modal-backdrop">
-      <div className="user-management supplier-management">
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <div
+        className="user-management supplier-management"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="user-management-header">
           <div>
             <h2>Fornecedores</h2>
@@ -895,7 +914,7 @@ function SupplierManagement({
               <input
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
-                placeholder="Nome do fornecedor"
+                placeholder="Razão social"
               />
               <button className="btn primary" onClick={() => void saveNew()}>
                 Salvar
@@ -912,12 +931,19 @@ function SupplierManagement({
           </div>
         </div>
 
+        <div className="supplier-list-head">
+          <span>CNPJ</span>
+          <span>Razão social</span>
+          <span>Ação</span>
+        </div>
+
         <div className="supplier-list">
           {filtered.map((supplier) => (
             <SupplierRow
               key={supplier.id}
               supplier={supplier}
               onSave={onSave}
+              onDelete={removeSupplier}
             />
           ))}
           {!filtered.length && <div className="user-empty">Nenhum fornecedor encontrado.</div>}
@@ -930,9 +956,11 @@ function SupplierManagement({
 function SupplierRow({
   supplier,
   onSave,
+  onDelete,
 }: {
   supplier: { id: string; cnpj: string; nome: string }
   onSave: (cnpj: string, nome: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
 }) {
   const [nome, setNome] = useState(supplier.nome)
 
@@ -951,6 +979,13 @@ function SupplierRow({
           }
         }}
       />
+      <button
+        type="button"
+        className="btn danger"
+        onClick={() => void onDelete(supplier.id)}
+      >
+        Remover
+      </button>
     </div>
   )
 }
