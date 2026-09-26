@@ -117,3 +117,7 @@ create table if not exists public.app_config (
 
 alter table public.app_config enable row level security;
 revoke all on public.app_config from anon, authenticated;
+
+
+alter table public.notas_fiscais replica identity full;
+alter table public.fornecedores replica identity full;
