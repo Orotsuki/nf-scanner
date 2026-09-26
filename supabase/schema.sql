@@ -22,8 +22,7 @@ create table if not exists public.notas_fiscais (
   valor numeric(14,2),
   chave_acesso text not null,
   data_cadastro timestamptz not null default now(),
-  status text not null default 'Pendente' check (status in ('Pendente','Conferida','Finalizada')),
-  data_controladoria date,
+  data_envio date,
   unique (user_id, chave_acesso)
 );
 
@@ -104,11 +103,8 @@ end $$;
 create index if not exists idx_notas_fiscais_user_data
   on public.notas_fiscais (user_id, data_cadastro desc);
 
-create index if not exists idx_notas_fiscais_status
-  on public.notas_fiscais (status);
-
-create index if not exists idx_notas_fiscais_controladoria
-  on public.notas_fiscais (data_controladoria);
+create index if not exists idx_notas_fiscais_envio
+  on public.notas_fiscais (data_envio);
 
 create index if not exists idx_fornecedores_user_cnpj
   on public.fornecedores (user_id, cnpj);
