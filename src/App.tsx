@@ -232,8 +232,7 @@ export default function App() {
       fornecedor,
       valor: null,
       dataCadastro: new Date().toISOString(),
-      dataControladoria: null,
-      status: 'Pendente',
+      dataEnvio: null,
     }
 
     setNotes((current) => [note, ...current])
