@@ -630,7 +630,7 @@ export default function App() {
                     <span className="top-menu-icon">⇩</span>
                     <span className="top-menu-text">
                       <strong>Instalar aplicativo</strong>
-                      <small>Adicionar à tela inicial do celular</small>
+                      <small>Instalar no dispositivo</small>
                     </span>
                   </button>
 
