@@ -877,10 +877,132 @@ function DashboardModal({
   notes: NotaFiscal[]
   onClose: () => void
 }) {
-  const totalValue = notes.reduce((total, note) => total + (typeof note.valor === 'number' ? note.valor : 0), 0)
-  const withoutSupplier = notes.filter((note) => !note.fornecedor.trim()).length
-  const withoutValue = notes.filter((note) => note.valor == null).length
-  const sentToController = notes.filter((note) => note.dataEnvio).length
+  type DashboardPeriod = '6m' | '12m' | 'currentYear' | 'previousYear' | 'all'
+  type SupplierSummary = { nome: string; quantidade: number; valor: number }
+
+  const [period, setPeriod] = useState<DashboardPeriod>('6m')
+  const [supplierSort, setSupplierSort] = useState<'quantidade' | 'valor'>('quantidade')
+  const [showAllSuppliers, setShowAllSuppliers] = useState(false)
+
+  const periodLabel = {
+    '6m': 'Últimos 6 meses',
+    '12m': 'Últimos 12 meses',
+    currentYear: 'Este ano',
+    previousYear: 'Ano anterior',
+    all: 'Todo o histórico',
+  }[period]
+
+  const periodStart = useMemo(() => {
+    if (period === 'all') return null
+
+    const now = new Date()
+
+    if (period === 'currentYear') {
+      return new Date(now.getFullYear(), 0, 1)
+    }
+
+    if (period === 'previousYear') {
+      return new Date(now.getFullYear() - 1, 0, 1)
+    }
+
+    const months = period === '6m' ? 5 : 11
+    return new Date(now.getFullYear(), now.getMonth() - months, 1)
+  }, [period])
+
+  const periodEnd = useMemo(() => {
+    if (period === 'all') return null
+
+    const now = new Date()
+
+    if (period === 'currentYear') {
+      return new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999)
+    }
+
+    if (period === 'previousYear') {
+      return new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999)
+    }
+
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  }, [period])
+
+  const periodNotes = useMemo(() => {
+    if (!periodStart || !periodEnd) return notes
+
+    return notes.filter((note) => {
+      const date = new Date(note.dataCadastro)
+      return !Number.isNaN(date.getTime()) && date >= periodStart && date <= periodEnd
+    })
+  }, [notes, periodStart, periodEnd])
+
+  const monthlyData = useMemo(() => {
+    const buckets = new Map<string, { date: Date; quantidade: number; valor: number }>()
+
+    if (period === 'all') {
+      periodNotes.forEach((note) => {
+        const date = new Date(note.dataCadastro)
+        if (Number.isNaN(date.getTime())) return
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        const existing = buckets.get(key) ?? {
+          date: new Date(date.getFullYear(), date.getMonth(), 1),
+          quantidade: 0,
+          valor: 0,
+        }
+        existing.quantidade += 1
+        existing.valor += typeof note.valor === 'number' && note.valor > 0 ? note.valor : 0
+        buckets.set(key, existing)
+      })
+    } else {
+      const start = new Date(periodStart!)
+      const end = new Date(periodEnd!)
+      const cursor = new Date(start.getFullYear(), start.getMonth(), 1)
+
+      while (cursor <= end) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+        buckets.set(key, {
+          date: new Date(cursor),
+          quantidade: 0,
+          valor: 0,
+        })
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+
+      periodNotes.forEach((note) => {
+        const date = new Date(note.dataCadastro)
+        if (Number.isNaN(date.getTime())) return
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        const existing = buckets.get(key)
+        if (!existing) return
+        existing.quantidade += 1
+        existing.valor += typeof note.valor === 'number' && note.valor > 0 ? note.valor : 0
+      })
+    }
+
+    return [...buckets.values()].sort((a, b) => a.date.getTime() - b.date.getTime())
+  }, [period, periodNotes, periodStart, periodEnd])
+
+  const maxMonthlyQuantity = Math.max(1, ...monthlyData.map((item) => item.quantidade))
+  const maxMonthlyValue = Math.max(1, ...monthlyData.map((item) => item.valor))
+
+  const supplierSummary = useMemo<SupplierSummary[]>(() => {
+    const map = new Map<string, SupplierSummary>()
+
+    periodNotes.forEach((note) => {
+      const nome = note.fornecedor.trim() || 'Fornecedor não cadastrado'
+      const existing = map.get(nome) ?? { nome, quantidade: 0, valor: 0 }
+      existing.quantidade += 1
+      existing.valor += typeof note.valor === 'number' && note.valor > 0 ? note.valor : 0
+      map.set(nome, existing)
+    })
+
+    return [...map.values()].sort((a, b) => {
+      if (supplierSort === 'valor') {
+        return b.valor - a.valor || b.quantidade - a.quantidade || a.nome.localeCompare(b.nome)
+      }
+      return b.quantidade - a.quantidade || b.valor - a.valor || a.nome.localeCompare(b.nome)
+    })
+  }, [periodNotes, supplierSort])
+
+  const visibleSuppliers = showAllSuppliers ? supplierSummary : supplierSummary.slice(0, 10)
 
   return (
     <div
@@ -890,43 +1012,176 @@ function DashboardModal({
       }}
     >
       <div
-        className="dashboard-modal"
+        className="dashboard-modal dashboard-modal-expanded"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="user-management-header">
           <div>
             <h2>Dashboard</h2>
-            <p>Resumo das notas fiscais cadastradas.</p>
+            <p>Indicadores das notas fiscais cadastradas.</p>
           </div>
           <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <div className="dashboard-grid">
-          <div className="dashboard-card">
-            <span>Notas cadastradas</span>
-            <strong>{notes.length}</strong>
-          </div>
-          <div className="dashboard-card">
-            <span>Sem fornecedor</span>
-            <strong>{withoutSupplier}</strong>
-          </div>
-          <div className="dashboard-card">
-            <span>Sem valor</span>
-            <strong>{withoutValue}</strong>
-          </div>
-          <div className="dashboard-card checked">
-            <span>Enviadas à controladoria</span>
-            <strong>{sentToController}</strong>
-          </div>
+        <div className="dashboard-main-card">
+          <span>Total de NFs cadastradas</span>
+          <strong>{notes.length}</strong>
+          <small>Considera todas as notas da base.</small>
         </div>
 
-        <div className="dashboard-value">
-          <span>Valor total cadastrado</span>
-          <strong>{formatMoney(totalValue)}</strong>
+        <div className="dashboard-period-toolbar">
+          <div>
+            <strong>Período de análise</strong>
+            <span>{periodLabel}</span>
+          </div>
+          <select
+            value={period}
+            onChange={(event) => {
+              setPeriod(event.target.value as DashboardPeriod)
+              setShowAllSuppliers(false)
+            }}
+            aria-label="Período do dashboard"
+          >
+            <option value="6m">Últimos 6 meses</option>
+            <option value="12m">Últimos 12 meses</option>
+            <option value="currentYear">Este ano</option>
+            <option value="previousYear">Ano anterior</option>
+            <option value="all">Todo o histórico</option>
+          </select>
         </div>
+
+        <div className="dashboard-chart-grid">
+          <DashboardChart
+            title="NFs cadastradas por mês"
+            subtitle="Quantidade de registros pela Data Cadastro"
+            data={monthlyData.map((item) => ({
+              label: formatMonthLabel(item.date),
+              value: item.quantidade,
+              width: (item.quantidade / maxMonthlyQuantity) * 100,
+              display: String(item.quantidade),
+            }))}
+            emptyText="Nenhuma NF cadastrada neste período."
+          />
+
+          <DashboardChart
+            title="Valor cadastrado por mês"
+            subtitle="Soma dos valores pela Data Cadastro"
+            data={monthlyData.map((item) => ({
+              label: formatMonthLabel(item.date),
+              value: item.valor,
+              width: (item.valor / maxMonthlyValue) * 100,
+              display: formatCompactMoney(item.valor),
+            }))}
+            emptyText="Nenhum valor cadastrado neste período."
+          />
+        </div>
+
+        <section className="dashboard-suppliers">
+          <div className="dashboard-section-heading">
+            <div>
+              <h3>Resumo por fornecedor</h3>
+              <p>{supplierSummary.length} fornecedor{supplierSummary.length === 1 ? '' : 'es'} no período</p>
+            </div>
+            <div className="dashboard-sort-actions">
+              <button
+                type="button"
+                className={supplierSort === 'quantidade' ? 'active' : ''}
+                onClick={() => setSupplierSort('quantidade')}
+              >
+                Nº de NFs
+              </button>
+              <button
+                type="button"
+                className={supplierSort === 'valor' ? 'active' : ''}
+                onClick={() => setSupplierSort('valor')}
+              >
+                Valor total
+              </button>
+            </div>
+          </div>
+
+          <div className="dashboard-supplier-head">
+            <span>Fornecedor</span>
+            <span>Nº de NFs</span>
+            <span>Valor total</span>
+          </div>
+
+          <div className="dashboard-supplier-list">
+            {visibleSuppliers.map((supplier) => (
+              <div className="dashboard-supplier-row" key={supplier.nome}>
+                <span title={supplier.nome}>{supplier.nome}</span>
+                <strong>{supplier.quantidade}</strong>
+                <strong>{formatMoney(supplier.valor)}</strong>
+              </div>
+            ))}
+
+            {!visibleSuppliers.length && (
+              <div className="dashboard-empty">Nenhum fornecedor com notas neste período.</div>
+            )}
+          </div>
+
+          {supplierSummary.length > 10 && (
+            <button
+              type="button"
+              className="dashboard-see-all"
+              onClick={() => setShowAllSuppliers((value) => !value)}
+            >
+              {showAllSuppliers ? 'Mostrar top 10' : `Ver todos (${supplierSummary.length})`}
+            </button>
+          )}
+        </section>
       </div>
     </div>
   )
+}
+
+function DashboardChart({
+  title,
+  subtitle,
+  data,
+  emptyText,
+}: {
+  title: string
+  subtitle: string
+  data: Array<{ label: string; value: number; width: number; display: string }>
+  emptyText: string
+}) {
+  return (
+    <section className="dashboard-chart-card">
+      <div className="dashboard-chart-title">
+        <div>
+          <h3>{title}</h3>
+          <p>{subtitle}</p>
+        </div>
+      </div>
+
+      <div className="dashboard-bars">
+        {data.map((item) => (
+          <div className="dashboard-bar-row" key={item.label}>
+            <span className="dashboard-bar-label">{item.label}</span>
+            <div className="dashboard-bar-track">
+              <div className="dashboard-bar-fill" style={{ width: `${Math.max(item.width, item.value > 0 ? 5 : 0)}%` }} />
+            </div>
+            <strong>{item.display}</strong>
+          </div>
+        ))}
+        {!data.length && <div className="dashboard-empty">{emptyText}</div>}
+      </div>
+    </section>
+  )
+}
+
+function formatMonthLabel(date: Date): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'short',
+    year: '2-digit',
+  }).format(date).replace('.', '')
+}
+
+function formatCompactMoney(value: number): string {
+  if (value >= 1000000) return `R$ ${(value / 1000000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`
+  if (value >= 1000) return `R$ ${(value / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil`
+  return `R$ ${formatMoney(value)}`
 }
 
 function SupplierManagement({
