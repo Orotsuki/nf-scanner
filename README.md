@@ -12,9 +12,12 @@ Leitor de NF-e e NFS-e para Android e desktop. A aplicação lê código de barr
 - Cadastro automático de fornecedor por CNPJ/documento.
 - Cadastro de novos usuários protegido por código privado.
 - Valor da NF preenchido manualmente.
+- Data de cadastro e data de envio à controladoria.
+- Atualização em lote da data de envio.
 - Sincronização da base entre celular e computador por conta de usuário.
 - Armazenamento local como cache/fallback.
 - Base centralizada de notas fiscais com sincronização entre dispositivos.
+- Dashboard e cadastro de fornecedores.
 - PWA instalável.
 - Interface responsiva.
 
