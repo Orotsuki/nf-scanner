@@ -1,9 +1,9 @@
-import type { NotaFiscal, NotaStatus } from './types'
+import type { NotaFiscal } from './types'
 
 const STORAGE_KEY = 'nf-scanner:notes:v1'
 
 function normalizeNote(value: Partial<NotaFiscal>): NotaFiscal {
-  const legacy = value as Partial<NotaFiscal> & { dataLeitura?: string }
+  const legacy = value as Partial<NotaFiscal> & { dataLeitura?: string; dataControladoria?: string | null }
 
   return {
     id: value.id ?? crypto.randomUUID(),
@@ -13,13 +13,8 @@ function normalizeNote(value: Partial<NotaFiscal>): NotaFiscal {
     valor: typeof value.valor === 'number' ? value.valor : null,
     chaveAcesso: value.chaveAcesso ?? '',
     dataCadastro: value.dataCadastro ?? legacy.dataLeitura ?? new Date().toISOString(),
-    dataControladoria: value.dataControladoria ?? null,
-    status: normalizeStatus(value.status),
+    dataEnvio: value.dataEnvio ?? legacy.dataControladoria ?? null,
   }
-}
-
-function normalizeStatus(status: NotaStatus | undefined): NotaStatus {
-  return status === 'Conferida' || status === 'Finalizada' ? status : 'Pendente'
 }
 
 export function loadNotes(): NotaFiscal[] {
