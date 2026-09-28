@@ -62,6 +62,7 @@ export default function App() {
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
   const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
+  const [refreshing, setRefreshing] = useState(false)
   const topMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -382,6 +383,13 @@ export default function App() {
       lastSelectedNoteId.current = id
       return next
     })
+  }
+
+  function handleRefresh(): void {
+    if (refreshing) return
+    setRefreshing(true)
+    window.dispatchEvent(new Event('nf-scanner-refresh'))
+    window.setTimeout(() => setRefreshing(false), 850)
   }
 
   async function applyBulkSendDate(): Promise<void> {
@@ -751,8 +759,8 @@ export default function App() {
                 </div>
                 <button
                   type="button"
-                  className="refresh-btn"
-                  onClick={() => window.dispatchEvent(new Event('nf-scanner-refresh'))}
+                  className={`refresh-btn ${refreshing ? 'is-refreshing' : ''}`}
+                  onClick={handleRefresh}
                   aria-label="Atualizar notas"
                   title="Atualizar"
                 >
@@ -1190,7 +1198,20 @@ function SupplierManagement({
   const filtered = supplierRows.filter((supplier) => {
     const q = searchSupplier.trim().toLowerCase()
     if (!q) return true
-    return supplier.cnpj.includes(q.replace(/\D/g, '')) || supplier.nome.toLowerCase().includes(q)
+
+    const digits = q.replace(/\D/g, '')
+    const normalizedName = supplier.nome
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+    const normalizedQuery = q
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+
+    const matchesCnpj = digits.length > 0 && supplier.cnpj.includes(digits)
+    const matchesName = normalizedName.includes(normalizedQuery)
+
+    return matchesCnpj || matchesName
   })
 
   async function saveNew() {
