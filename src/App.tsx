@@ -1196,22 +1196,27 @@ function SupplierManagement({
   useEffect(() => setSupplierRows(suppliers), [suppliers])
 
   const filtered = supplierRows.filter((supplier) => {
-    const q = searchSupplier.trim().toLowerCase()
-    if (!q) return true
+    const query = searchSupplier.trim()
 
-    const digits = q.replace(/\D/g, '')
+    if (!query) return true
+
+    const normalizedQuery = query
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+
     const normalizedName = supplier.nome
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
-    const normalizedQuery = q
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
 
-    const matchesCnpj = digits.length > 0 && supplier.cnpj.includes(digits)
+    const queryDigits = query.replace(/\D/g, '')
+    const supplierCnpjDigits = supplier.cnpj.replace(/\D/g, '')
+
     const matchesName = normalizedName.includes(normalizedQuery)
+    const matchesCnpj = queryDigits.length > 0 && supplierCnpjDigits.includes(queryDigits)
 
-    return matchesCnpj || matchesName
+    return matchesName || matchesCnpj
   })
 
   async function saveNew() {
