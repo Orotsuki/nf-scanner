@@ -2107,3 +2107,115 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   outline: 2px solid #1591ff;
   outline-offset: 2px;
 }
+
+
+/* Correção final — eliminar campos cinza/brancos restantes no tema Azul Industrial */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background-color: #07182a;
+  color: #edf5ff;
+  border-color: #294b6d;
+}
+
+.dark-theme input::placeholder,
+.dark-theme select::placeholder,
+.dark-theme textarea::placeholder {
+  color: #7089a2;
+}
+
+/* Impede o preenchimento automático do navegador de voltar ao branco */
+.dark-theme input:-webkit-autofill,
+.dark-theme input:-webkit-autofill:hover,
+.dark-theme input:-webkit-autofill:focus,
+.dark-theme input:-webkit-autofill:active {
+  -webkit-text-fill-color: #edf5ff;
+  -webkit-box-shadow: 0 0 0 1000px #07182a inset;
+  box-shadow: 0 0 0 1000px #07182a inset;
+  caret-color: #edf5ff;
+  border-color: #294b6d;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* Campos de cadastro/edição */
+.dark-theme .user-create-grid input,
+.dark-theme .user-reset input,
+.dark-theme .supplier-row .editable-cell-input,
+.dark-theme .supplier-row input,
+.dark-theme .dashboard-period-toolbar select,
+.dark-theme .dashboard-sort-actions button,
+.dark-theme .bulk-actions input,
+.dark-theme .list-search-actions input,
+.dark-theme .filter-wrap select {
+  background: #07182a;
+  color: #edf5ff;
+  border-color: #294b6d;
+}
+
+.dark-theme .user-create-grid input:focus,
+.dark-theme .user-reset input:focus,
+.dark-theme .supplier-row .editable-cell-input:focus,
+.dark-theme .supplier-row input:focus,
+.dark-theme .dashboard-period-toolbar select:focus,
+.dark-theme .bulk-actions input:focus,
+.dark-theme .list-search-actions input:focus,
+.dark-theme .filter-wrap select:focus {
+  background: #0a1e33;
+  color: #f4f8ff;
+  border-color: #1591ff;
+  box-shadow: 0 0 0 3px rgba(21,145,255,.16);
+}
+
+/* Botões secundários que ainda herdavam o cinza do tema antigo */
+.dark-theme .user-row .btn.secondary,
+.dark-theme .user-row .btn.ghost,
+.dark-theme .dashboard-sort-actions button:not(.active),
+.dark-theme .dashboard-see-all {
+  background: #10263f;
+  color: #dcecff;
+  border-color: #2a4d70;
+}
+
+.dark-theme .user-row .btn.secondary:hover,
+.dark-theme .user-row .btn.ghost:hover,
+.dark-theme .dashboard-sort-actions button:not(.active):hover,
+.dark-theme .dashboard-see-all:hover {
+  background: #143250;
+  border-color: #3970a5;
+  color: #f4f8ff;
+}
+
+.dark-theme .btn.danger {
+  background: #321a20;
+  color: #ff7d86;
+  border-color: #7a3a45;
+}
+
+.dark-theme .btn.danger:hover {
+  background: #452029;
+  border-color: #a84c5b;
+  color: #ffb0b6;
+}
+
+/* Campos de login */
+.auth-shell .auth-form input {
+  background: #07182a;
+  color: #edf5ff;
+  border-color: #294b6d;
+}
+
+.auth-shell .auth-form input:focus {
+  background: #0a1e33;
+  border-color: #1591ff;
+}
+
+.auth-shell .auth-form input:-webkit-autofill,
+.auth-shell .auth-form input:-webkit-autofill:hover,
+.auth-shell .auth-form input:-webkit-autofill:focus,
+.auth-shell .auth-form input:-webkit-autofill:active {
+  -webkit-text-fill-color: #edf5ff;
+  -webkit-box-shadow: 0 0 0 1000px #07182a inset;
+  box-shadow: 0 0 0 1000px #07182a inset;
+  caret-color: #edf5ff;
+  border-color: #294b6d;
+}
