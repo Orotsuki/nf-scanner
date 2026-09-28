@@ -526,9 +526,15 @@ export default function App() {
   }
 
   return (
-    <div className={`app-shell ${darkMode ? 'dark-theme' : ''}`}>
+    <div className="app-shell dark-theme">
       <header className="topbar">
         <div className="brand">
+          <img
+            className="brand-logo"
+            src={import.meta.env.BASE_URL + 'icons/nf-scanner-icon.svg'}
+            alt=""
+            aria-hidden="true"
+          />
           <div>
             <div className="brand-title">NF Scanner</div>
             <div className="brand-subtitle">Leitura rápida de NF-e</div>
