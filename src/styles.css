@@ -2012,3 +2012,34 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     grid-template-columns: 48px minmax(0, 1fr) 70px;
   }
 }
+
+/* Tema de teste — Azul Industrial / Dark Navy */
+.dark-theme { --navy:#f4f8ff; --slate:#93a8bd; --line:#233b56; --panel:#0c1b2d; --soft:#10253c; --green:#32d583; --green-soft:#0b2b24; --amber:#f5b942; --amber-soft:#332714; --red:#ff6b72; --red-soft:#321a20; color:#edf5ff; background:#061426; }
+.dark-theme .topbar { background:linear-gradient(135deg,#071a30,#0a2039); border-bottom:1px solid #1e4268; box-shadow:0 8px 30px rgba(0,0,0,.34); }
+.dark-theme .brand-logo { width:42px; height:42px; flex:0 0 auto; border-radius:11px; box-shadow:0 5px 16px rgba(0,0,0,.28); }
+.dark-theme .brand-title { color:#f7fbff; } .dark-theme .brand-subtitle { color:#8ea8c2; }
+.dark-theme .content { background:radial-gradient(circle at 12% 0%,rgba(13,87,166,.16),transparent 28%),radial-gradient(circle at 92% 100%,rgba(8,71,142,.12),transparent 30%),#061426; }
+.dark-theme .scanner-panel,.dark-theme .list-panel,.dark-theme .summary-card,.dark-theme .user-management,.dark-theme .dashboard-modal { background:linear-gradient(145deg,#0b1c30,#0a192a); border-color:#214365; box-shadow:0 18px 55px rgba(0,0,0,.26); }
+.dark-theme h1,.dark-theme h2,.dark-theme h3,.dark-theme .summary-number,.dark-theme .user-name,.dark-theme .user-management-header h2,.dark-theme .dashboard-section-heading h3,.dark-theme .dashboard-chart-title h3 { color:#f4f8ff; }
+.dark-theme .section-heading p,.dark-theme .summary-foot,.dark-theme .summary-label,.dark-theme .user-management-header p,.dark-theme .user-meta,.dark-theme .dashboard-chart-title p,.dark-theme .dashboard-section-heading p { color:#8fa6bd; }
+.dark-theme .btn.primary { background:linear-gradient(135deg,#0f8cff,#1265e6); color:white; border-color:#1b92ff; box-shadow:0 9px 25px rgba(18,101,230,.25); }
+.dark-theme .btn.secondary { background:#10263f; color:#e9f3ff; border-color:#2a4d70; } .dark-theme .btn.secondary:hover { background:#143250; border-color:#3970a5; }
+.dark-theme .btn.ghost { background:#10253a; color:#cbdced; border-color:#23425f; }
+.dark-theme .manual-box,.dark-theme .user-create-box,.dark-theme .scanner-menu,.dark-theme .top-menu { background:#0c1f34; border-color:#264b70; color:#edf5ff; box-shadow:0 20px 55px rgba(0,0,0,.34); }
+.dark-theme .manual-box label,.dark-theme .field-help,.dark-theme .filter-wrap label,.dark-theme .supplier-list-head,.dark-theme .dashboard-supplier-head { color:#9bb1c7; }
+.dark-theme .manual-row input,.dark-theme .search-wrap input,.dark-theme .filter-wrap select,.dark-theme .user-create-grid input,.dark-theme .user-reset input,.dark-theme .scanner-menu select,.dark-theme .editable-cell-select,.dark-theme .control-date-input,.dark-theme .editable-cell-input { background:#07182a; color:#edf5ff; border-color:#294b6d; }
+.dark-theme .manual-row input::placeholder,.dark-theme .search-wrap input::placeholder,.dark-theme .user-create-grid input::placeholder,.dark-theme .user-reset input::placeholder,.dark-theme .editable-cell-input::placeholder { color:#7089a2; }
+.dark-theme .manual-row input:focus,.dark-theme .search-wrap input:focus,.dark-theme .filter-wrap select:focus,.dark-theme .user-create-grid input:focus,.dark-theme .user-reset input:focus,.dark-theme .editable-cell-select:focus,.dark-theme .editable-cell-input:focus { border-color:#1591ff; box-shadow:0 0 0 3px rgba(21,145,255,.16); background:#0a1e33; }
+.dark-theme .table-wrap { border-color:#214365; background:#08182a; } .dark-theme table { color:#eaf3ff; } .dark-theme th { background:#0d233a; color:#9fb5ca; border-color:#214365; } .dark-theme th,.dark-theme td { border-color:#1b3652; }
+.dark-theme tbody tr:hover { background:#0d2238; } .dark-theme td code,.dark-theme .date-cell { color:#9eb5ca; } .dark-theme .editable-cell-input:hover { border-color:#315a81; background:#0c2238; } .dark-theme .editable-cell-input.pending { border-color:#76591d; background:#332817; }
+.dark-theme .delete-btn { color:#718ba3; } .dark-theme .delete-btn:hover { color:#ff6670; } .dark-theme .bulk-toolbar { background:#0d243c; border-color:#245078; color:#e9f3ff; }
+.dark-theme .recent-note-banner { background:linear-gradient(135deg,#0a3328,#0b282a); border-color:#1b8d68; color:#baf5dc; }
+.dark-theme .top-menu-user { border-color:#26445f; } .dark-theme .top-menu-user-info span,.dark-theme .top-menu-item small { color:#8fa6bd; } .dark-theme .top-menu-item { color:#edf5ff; } .dark-theme .top-menu-item:hover { background:#12304c; } .dark-theme .top-menu-icon { background:#12304c; color:#bfe0ff; }
+.dark-theme .top-menu-signout { background:#321a20; border-color:#683039; color:#ff9ba1; } .dark-theme .menu-switch.on { background:#0f8cff; }
+.dark-theme .dashboard-main-card { background:linear-gradient(135deg,#0d3865,#0a2850); border-color:#1d6096; } .dark-theme .dashboard-chart-card,.dark-theme .dashboard-suppliers { background:#0b1c30; border-color:#214365; }
+.dark-theme .dashboard-bar-track { background:#102a44; } .dark-theme .dashboard-bar-fill { background:linear-gradient(90deg,#0f8cff,#2b9fff); } .dark-theme .dashboard-supplier-row { border-color:#1f3d5b; background:#0c2036; color:#eaf3ff; }
+.dark-theme .dashboard-sort-actions button { background:#0d2238; border-color:#294b6d; color:#a8bdd2; } .dark-theme .dashboard-sort-actions button.active,.dark-theme .dashboard-see-all { background:#0f8cff; border-color:#0f8cff; color:white; }
+.dark-theme .supplier-row { border-color:#214365; background:#0c2036; } .dark-theme .supplier-row code { color:#a9bed2; }
+.dark-theme .camera-selector,.dark-theme .camera-selector-fallback { background:#0c2035; border-color:#214365; color:#9eb5ca; } .dark-theme .camera-selector select { background:#07182a; color:#edf5ff; border-color:#294b6d; }
+.dark-theme .flash-toggle { background:#102840; border-color:#294b6d; color:#edf5ff; } .dark-theme .flash-toggle.on { background:#332817; border-color:#76591d; }
+.dark-theme .modal-backdrop { background:rgba(2,10,20,.78); backdrop-filter:blur(8px); } .dark-theme .modal-close { color:#9eb5ca; background:#0d2238; border-color:#294b6d; } .dark-theme .modal-close:hover { color:white; background:#123454; }
