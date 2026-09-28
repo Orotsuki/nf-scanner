@@ -2364,3 +2364,107 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     width: 100% !important;
   }
 }
+
+
+/* Paginação da lista de NFs — 100 registros por página */
+.dark-theme .notes-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 10px 2px 2px;
+}
+
+.dark-theme .pagination-summary {
+  color: #91aac2;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.dark-theme .pagination-summary strong {
+  color: #dcecff;
+}
+
+.dark-theme .pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dark-theme .pagination-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid #263f59;
+  border-radius: 11px;
+  background: #091b2d;
+  color: #d7e7f7;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .12s ease;
+}
+
+.dark-theme .pagination-btn:hover:not(:disabled):not(.active) {
+  background: #102a44;
+  border-color: #3a638a;
+  color: #f4f8ff;
+  transform: translateY(-1px);
+}
+
+.dark-theme .pagination-btn.active {
+  background: linear-gradient(135deg, #1591ff, #1265e6);
+  border-color: #1591ff;
+  color: #fff;
+  box-shadow: 0 5px 16px rgba(21,145,255,.22);
+}
+
+.dark-theme .pagination-btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.dark-theme .pagination-nav {
+  min-width: 92px;
+}
+
+.dark-theme .pagination-ellipsis {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 38px;
+  color: #7089a2;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .dark-theme .notes-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dark-theme .pagination-controls {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .dark-theme .pagination-controls {
+    gap: 5px;
+  }
+
+  .dark-theme .pagination-btn {
+    min-width: 34px;
+    height: 36px;
+    padding: 0 9px;
+  }
+
+  .dark-theme .pagination-nav {
+    min-width: 78px;
+  }
+}
