@@ -368,61 +368,149 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: #f8fafc;
+  padding: 32px 20px;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.24), transparent 32%),
+    radial-gradient(circle at 100% 100%, rgba(29, 78, 216, 0.18), transparent 30%),
+    #07111d;
+  color: #eef3f5;
 }
+
+.auth-shell::before,
+.auth-shell::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.auth-shell::before {
+  width: 520px;
+  height: 520px;
+  top: -310px;
+  left: -250px;
+  background: #173b70;
+}
+
+.auth-shell::after {
+  width: 620px;
+  height: 620px;
+  right: -360px;
+  bottom: -390px;
+  background: #102c58;
+}
+
 .auth-card {
-  width: min(420px, 100%);
-  padding: 30px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: white;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  padding: 34px 34px 32px;
+  border: 1px solid #2c4054;
+  border-radius: 22px;
+  background: rgba(12, 23, 36, 0.94);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
   text-align: center;
+  backdrop-filter: blur(16px);
 }
-.auth-card .brand-mark {
-  margin: 0 auto 14px;
+
+.auth-logo {
+  display: block;
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 15px;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
-.brand-mark.large {
-  width: 54px;
-  height: 54px;
-  border-radius: 15px;
-  font-size: 16px;
-}
+
 .auth-card h1 {
-  font-size: 28px;
+  margin: 0;
+  color: #f7fafc;
+  font-size: 29px;
+  letter-spacing: -0.03em;
 }
+
 .auth-card p {
-  margin: 8px 0 0;
-  color: var(--slate);
+  margin: 9px 0 0;
+  color: #9eafbe;
   font-size: 13px;
   line-height: 1.5;
 }
+
 .auth-form {
   display: grid;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 24px;
   text-align: left;
 }
+
 .auth-form label {
   margin-top: 4px;
-  color: #334155;
+  color: #edf3f6;
   font-size: 12px;
   font-weight: 800;
 }
+
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-input-icon {
+  position: absolute;
+  left: 14px;
+  z-index: 1;
+  color: #aab8c5;
+  font-size: 16px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .auth-form input {
   width: 100%;
-  height: 44px;
-  border: 1px solid #cbd5e1;
-  border-radius: 11px;
-  padding: 0 12px;
+  height: 48px;
+  border: 1px solid #41566b;
+  border-radius: 12px;
+  padding: 0 44px;
   outline: none;
-  background: white;
+  background: #1a2838;
+  color: #f2f6f8;
+  font-size: 13px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
+
+.auth-form input::placeholder {
+  color: #8293a5;
+}
+
 .auth-form input:focus {
-  border-color: #64748b;
-  box-shadow: 0 0 0 3px rgba(100,116,139,0.12);
+  border-color: #1683f6;
+  background: #1d2d40;
+  box-shadow: 0 0 0 3px rgba(22, 131, 246, 0.16);
 }
+
+.auth-password-toggle {
+  position: absolute;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9aabba;
+  font-size: 16px;
+}
+
+.auth-password-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #eaf1f5;
+}
+
 .auth-message {
   margin-top: 8px;
   padding: 10px 11px;
@@ -430,34 +518,43 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 12px;
   line-height: 1.4;
 }
+
 .auth-message.error {
-  color: var(--red);
-  background: var(--red-soft);
+  color: #ffb0b5;
+  background: #321c21;
+  border: 1px solid #633038;
 }
-.auth-message.success {
-  color: var(--green);
-  background: var(--green-soft);
-}
-.auth-switch {
+
+.auth-submit {
+  min-height: 48px;
+  margin-top: 8px;
   border: 0;
-  background: transparent;
-  color: #475569;
-  padding: 8px 4px 2px;
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1683f6, #1265e6);
+  color: white;
+  box-shadow: 0 10px 24px rgba(18, 101, 230, 0.26);
 }
-.auth-switch:hover { color: #0f172a; }
+
+.auth-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2590ff, #176ff1);
+  box-shadow: 0 12px 28px rgba(18, 101, 230, 0.34);
+}
 
 @media (max-width: 720px) {
-  .sync-badge {
-    max-width: 130px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .auth-shell {
+    padding: 20px 14px;
   }
-  .auth-card { padding: 24px 18px; }
-}
 
+  .auth-card {
+    padding: 28px 20px 24px;
+    border-radius: 18px;
+  }
+
+  .auth-logo {
+    width: 70px;
+    height: 70px;
+  }
+}
 
 .modal-backdrop {
   position: fixed;
