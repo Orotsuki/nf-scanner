@@ -191,6 +191,58 @@ export default function App() {
   }, [toast])
 
   useEffect(() => {
+    if (!session || !isSupabaseConfigured) return
+
+    const missingSuppliers = notes.filter((note) => {
+      if (note.fornecedor.trim()) return false
+      return Boolean(supplierMap[note.cnpjEmitente])
+    })
+
+    if (!missingSuppliers.length) return
+
+    let cancelled = false
+
+    const fillMissingSuppliers = async () => {
+      const updates = missingSuppliers.map((note) => ({
+        ...note,
+        fornecedor: supplierMap[note.cnpjEmitente].trim(),
+        syncPending: true,
+      }))
+
+      setNotes((current) =>
+        current.map((note) => {
+          const update = updates.find((item) => item.id === note.id)
+          return update ? update : note
+        }),
+      )
+
+      for (const note of updates) {
+        try {
+          await updateCloudNote(note)
+
+          if (cancelled) return
+
+          setNotes((current) =>
+            current.map((item) =>
+              item.id === note.id
+                ? { ...item, syncPending: false }
+                : item,
+            ),
+          )
+        } catch {
+          // Mantém syncPending=true para a sincronização automática tentar novamente.
+        }
+      }
+    }
+
+    void fillMissingSuppliers()
+
+    return () => {
+      cancelled = true
+    }
+  }, [notes, session?.user.id, supplierMap])
+
+  useEffect(() => {
     if (!topMenuOpen) return
 
     function handleOutsidePointer(event: MouseEvent): void {
