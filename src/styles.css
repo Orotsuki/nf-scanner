@@ -2219,3 +2219,87 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   caret-color: #edf5ff;
   border-color: #294b6d;
 }
+
+
+/* Ajustes finais — pesquisa, atualização e dashboard no Azul Industrial */
+.dark-theme .list-search-actions .search-wrap {
+  flex: 0 1 425px;
+  min-width: min(425px, 100%);
+}
+
+.dark-theme .list-search-actions .search-wrap input,
+.dark-theme .dark-theme .search-wrap input,
+.dark-theme .supplier-search input {
+  background: #07182a !important;
+  color: #edf5ff !important;
+  border-color: #294b6d !important;
+}
+
+.dark-theme .list-search-actions .search-wrap input:focus,
+.dark-theme .supplier-search input:focus {
+  background: #0a1e33 !important;
+  border-color: #1591ff !important;
+  box-shadow: 0 0 0 3px rgba(21,145,255,.16) !important;
+}
+
+.dark-theme .refresh-btn {
+  background: #0d243c !important;
+  color: #cfe8ff !important;
+  border-color: #2a5278 !important;
+  box-shadow: 0 5px 16px rgba(0,0,0,.18);
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.dark-theme .refresh-btn:hover {
+  background: #123250 !important;
+  border-color: #3b73a4 !important;
+}
+
+.dark-theme .refresh-btn.is-refreshing {
+  animation: refresh-spin .75s linear infinite;
+  border-color: #1591ff !important;
+  color: #6fc2ff !important;
+}
+
+@keyframes refresh-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.dark-theme .dashboard-period-toolbar {
+  background: linear-gradient(145deg, #0d2239, #0a1b2d) !important;
+  border-color: #234b70 !important;
+}
+
+.dark-theme .dashboard-period-toolbar strong {
+  color: #f2f7fc;
+}
+
+.dark-theme .dashboard-period-toolbar span {
+  color: #91aac2 !important;
+}
+
+.dark-theme .dashboard-period-toolbar select {
+  background: #07182a !important;
+  color: #edf5ff !important;
+  border-color: #294b6d !important;
+}
+
+.dark-theme .dashboard-period-toolbar select:focus {
+  border-color: #1591ff !important;
+  box-shadow: 0 0 0 3px rgba(21,145,255,.16);
+}
+
+@media (max-width: 980px) {
+  .dark-theme .list-search-actions .search-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .dark-theme .list-search-actions .search-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+}
