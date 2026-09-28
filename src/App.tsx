@@ -48,7 +48,6 @@ export default function App() {
   const [manualValue, setManualValue] = useState('')
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [search, setSearch] = useState('')
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isSupabaseConfigured ? 'connecting' : 'local')
@@ -64,13 +63,6 @@ export default function App() {
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
   const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
   const topMenuRef = useRef<HTMLDivElement>(null)
-  const [darkMode, setDarkMode] = useState(() => {
-    try {
-      return localStorage.getItem('nf-scanner:dark-mode') === 'true'
-    } catch {
-      return false
-    }
-  })
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -191,30 +183,6 @@ export default function App() {
   useEffect(() => {
     saveNotes(notes)
   }, [notes])
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('nf-scanner:dark-mode', String(darkMode))
-    } catch {
-      // Preference persistence is optional.
-    }
-  }, [darkMode])
-
-  useEffect(() => {
-    document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light'
-    return () => {
-      document.documentElement.style.colorScheme = 'light'
-    }
-  }, [darkMode])
-
-  useEffect(() => {
-    const handler = (event: Event) => {
-      event.preventDefault()
-      setInstallPrompt(event as BeforeInstallPromptEvent)
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -451,23 +419,6 @@ export default function App() {
     }
   }
 
-  async function installApp() {
-    if (installPrompt) {
-      await installPrompt.prompt()
-      await installPrompt.userChoice
-      setInstallPrompt(null)
-      return
-    }
-
-    setTopMenuOpen(false)
-    setToast({
-      type: 'warning',
-      text: /iPhone|iPad|iPod/i.test(navigator.userAgent)
-        ? 'No Safari: Compartilhar → Adicionar à Tela de Início.'
-        : 'No Chrome: menu ⋮ → Adicionar à tela inicial ou Instalar aplicativo.',
-    })
-  }
-
   if (isSupabaseConfigured && authLoading) {
     return (
       <div className="auth-shell">
@@ -628,32 +579,7 @@ export default function App() {
                     </span>
                   </button>
 
-                  <button
-                    className="top-menu-item"
-                    type="button"
-                    onClick={() => void installApp()}
-                  >
-                    <span className="top-menu-icon">⇩</span>
-                    <span className="top-menu-text">
-                      <strong>Instalar aplicativo</strong>
-                      <small>Instalar no dispositivo</small>
-                    </span>
-                  </button>
 
-                  <button
-                    className="top-menu-item"
-                    type="button"
-                    onClick={() => setDarkMode((value) => !value)}
-                  >
-                    <span className="top-menu-icon">{darkMode ? '☀' : '☾'}</span>
-                    <span className="top-menu-text">
-                      <strong>Modo escuro</strong>
-                      <small>{darkMode ? 'Ativado' : 'Desativado'}</small>
-                    </span>
-                    <span className={`menu-switch ${darkMode ? 'on' : ''}`} aria-hidden="true">
-                      <span />
-                    </span>
-                  </button>
                 </div>
               )}
             </div>
@@ -1526,7 +1452,18 @@ function AuthScreen() {
               aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
             >
-              {showPassword ? '◉' : '◌'}
+              {showPassword ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3l18 18" />
+                  <path d="M10.6 6.2A11.8 11.8 0 0 1 12 6c6.4 0 9.8 6 9.8 6a18 18 0 0 1-3.1 3.9" />
+                  <path d="M6.2 6.9C3.6 8.7 2.2 12 2.2 12s3.4 6 9.8 6c1.2 0 2.3-.2 3.3-.5" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.2 12S5.6 6 12 6s9.8 6 9.8 6-3.4 6-9.8 6-9.8-6-9.8-6Z" />
+                  <circle cx="12" cy="12" r="2.5" />
+                </svg>
+              )}
             </button>
           </div>
 
