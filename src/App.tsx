@@ -1445,6 +1445,7 @@ function AuthScreen() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function submit() {
     const normalizedUsername = username.trim().toLowerCase()
@@ -1474,40 +1475,59 @@ function AuthScreen() {
   return (
     <div className="auth-shell">
       <div className="auth-card">
-        <div className="brand-mark large">NF</div>
+        <img
+          className="auth-logo"
+          src={`${import.meta.env.BASE_URL}icons/nf-scanner-icon.svg`}
+          alt="NF Scanner"
+        />
         <h1>NF Scanner</h1>
         <p className="auth-subtitle">Entre para usar a mesma base no celular e no computador.</p>
 
         <div className="auth-form">
           <label htmlFor="auth-username">Usuário</label>
-          <input
-            id="auth-username"
-            type="text"
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="Ex.: andre.mendonca"
-          />
+          <div className="auth-input-wrap">
+            <span className="auth-input-icon" aria-hidden="true">◯</span>
+            <input
+              id="auth-username"
+              type="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="username"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="Informe seu usuário"
+            />
+          </div>
 
           <label htmlFor="auth-password">Senha</label>
-          <input
-            id="auth-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Sua senha"
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') void submit()
-            }}
-          />
+          <div className="auth-input-wrap">
+            <span className="auth-input-icon" aria-hidden="true">▣</span>
+            <input
+              id="auth-password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Informe sua senha"
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void submit()
+              }}
+            />
+            <button
+              type="button"
+              className="auth-password-toggle"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+              title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+            >
+              {showPassword ? '◉' : '◌'}
+            </button>
+          </div>
 
           {message && <div className="auth-message error">{message}</div>}
 
-          <button className="btn primary full" disabled={busy} onClick={() => void submit()}>
-            {busy ? 'Entrando…' : 'Entrar'}
+          <button className="btn primary full auth-submit" disabled={busy} onClick={() => void submit()}>
+            {busy ? 'Entrando…' : 'Entrar  →'}
           </button>
         </div>
       </div>
