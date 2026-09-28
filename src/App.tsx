@@ -63,6 +63,7 @@ export default function App() {
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
   const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
   const [refreshing, setRefreshing] = useState(false)
+  const [notesPage, setNotesPage] = useState(1)
   const topMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -358,7 +359,23 @@ export default function App() {
     })
   }, [notes, search, missingFilter])
 
+  const NOTES_PER_PAGE = 100
+  const notesTotalPages = Math.max(1, Math.ceil(filteredNotes.length / NOTES_PER_PAGE))
 
+  useEffect(() => {
+    setNotesPage(1)
+  }, [search, missingFilter])
+
+  useEffect(() => {
+    if (notesPage > notesTotalPages) {
+      setNotesPage(notesTotalPages)
+    }
+  }, [notesPage, notesTotalPages])
+
+  const paginatedNotes = useMemo(() => {
+    const start = (notesPage - 1) * NOTES_PER_PAGE
+    return filteredNotes.slice(start, start + NOTES_PER_PAGE)
+  }, [filteredNotes, notesPage])
 
   function toggleNoteSelection(id: string, shiftKey = false): void {
     setSelectedNoteIds((current) => {
@@ -816,7 +833,7 @@ export default function App() {
                 </tr>
               </thead>
               <tbody>
-                {filteredNotes.map((note) => (
+                {paginatedNotes.map((note) => (
                   <EditableNoteRow
                     key={note.id}
                     note={note}
@@ -837,6 +854,16 @@ export default function App() {
               </tbody>
             </table>
           </div>
+
+          {filteredNotes.length > 0 && (
+            <NotesPagination
+              currentPage={notesPage}
+              totalPages={notesTotalPages}
+              totalItems={filteredNotes.length}
+              pageSize={NOTES_PER_PAGE}
+              onPageChange={setNotesPage}
+            />
+          )}
         </section>
       </main>
 
@@ -858,6 +885,90 @@ export default function App() {
       {userManagementOpen && isAdmin && (
         <UserManagement onClose={() => setUserManagementOpen(false)} currentUserId={session.user.id} />
       )}
+    </div>
+  )
+}
+
+function NotesPagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  pageSize: number
+  onPageChange: (page: number) => void
+}) {
+  const startItem = (currentPage - 1) * pageSize + 1
+  const endItem = Math.min(currentPage * pageSize, totalItems)
+
+  const pages: Array<number | 'ellipsis'> = []
+
+  if (totalPages <= 10) {
+    for (let page = 1; page <= totalPages; page += 1) pages.push(page)
+  } else if (currentPage <= 6) {
+    for (let page = 1; page <= 10; page += 1) pages.push(page)
+    pages.push('ellipsis')
+    pages.push(totalPages - 1)
+    pages.push(totalPages)
+  } else if (currentPage >= totalPages - 5) {
+    pages.push(1)
+    pages.push(2)
+    pages.push('ellipsis')
+    for (let page = totalPages - 9; page <= totalPages; page += 1) pages.push(page)
+  } else {
+    pages.push(1)
+    pages.push(2)
+    pages.push('ellipsis')
+    for (let page = currentPage - 1; page <= currentPage + 1; page += 1) pages.push(page)
+    pages.push('ellipsis')
+    pages.push(totalPages - 1)
+    pages.push(totalPages)
+  }
+
+  return (
+    <div className="notes-pagination">
+      <div className="pagination-summary">
+        Exibindo <strong>{startItem}</strong>–<strong>{endItem}</strong> de <strong>{totalItems}</strong> NF{totalItems === 1 ? '' : 's'}
+      </div>
+
+      <div className="pagination-controls" aria-label="Paginação das notas fiscais">
+        <button
+          type="button"
+          className="pagination-btn pagination-nav"
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+        >
+          « Anterior
+        </button>
+
+        {pages.map((page, index) =>
+          page === 'ellipsis' ? (
+            <span className="pagination-ellipsis" key={`ellipsis-${index}`}>…</span>
+          ) : (
+            <button
+              type="button"
+              className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+              key={page}
+              onClick={() => onPageChange(page)}
+            >
+              {page}
+            </button>
+          ),
+        )}
+
+        <button
+          type="button"
+          className="pagination-btn pagination-nav"
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+        >
+          Próxima »
+        </button>
+      </div>
     </div>
   )
 }
