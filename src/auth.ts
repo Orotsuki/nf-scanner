@@ -21,7 +21,7 @@ async function usernameEmail(username: string): Promise<string> {
   return `u-${hex}@auth.nfscanner.app`
 }
 
-export async function signInUsername(username: string, password: string) {
+export async function signInUsername(username: string, password: string, captchaToken?: string) {
   if (!supabase || !isSupabaseConfigured) {
     throw new Error('A sincronização na nuvem ainda não foi configurada.')
   }
@@ -33,6 +33,7 @@ export async function signInUsername(username: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
+    ...(captchaToken ? { options: { captchaToken } } : {}),
   })
 
   if (error) throw error
