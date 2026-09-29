@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 type BrowserConfig = {
   supabaseUrl?: string
   supabasePublishableKey?: string
+  turnstileSiteKey?: string
 }
 
 declare global {
@@ -14,6 +15,7 @@ declare global {
 const config = window.NF_SCANNER_CONFIG ?? {}
 export const supabaseUrl = config.supabaseUrl?.trim() ?? ''
 export const supabasePublishableKey = config.supabasePublishableKey?.trim() ?? ''
+export const turnstileSiteKey = config.turnstileSiteKey?.trim() ?? ''
 
 export const isSupabaseConfigured =
   /^https:\/\/[^\s]+\.supabase\.co\/?$/.test(supabaseUrl) &&
