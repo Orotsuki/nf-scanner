@@ -169,8 +169,8 @@ Deno.serve(async (req) => {
           }, 400);
         }
 
-        if (password.length < 6 || password.length > 72) {
-          return json({ error: "A senha deve ter entre 6 e 72 caracteres." }, 400);
+        if (password.length < 12 || password.length > 72) {
+          return json({ error: "A senha deve ter entre 12 e 72 caracteres." }, 400);
         }
 
         const email = await usernameEmail(username);
@@ -212,8 +212,8 @@ Deno.serve(async (req) => {
         const password = typeof body?.password === "string" ? body.password : "";
 
         if (!userId) return json({ error: "Usuário inválido." }, 400);
-        if (password.length < 6 || password.length > 72) {
-          return json({ error: "A senha deve ter entre 6 e 72 caracteres." }, 400);
+        if (password.length < 12 || password.length > 72) {
+          return json({ error: "A senha deve ter entre 12 e 72 caracteres." }, 400);
         }
 
         const { data: target, error: targetError } = await supabase.auth.admin.getUserById(userId);
