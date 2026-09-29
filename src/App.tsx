@@ -61,7 +61,7 @@ export default function App() {
   const lastSelectedNoteId = useRef<string | null>(null)
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
-  const [missingFilter, setMissingFilter] = useState<'Todos os registros' | 'Pendências de preenchimento' | 'Data de envio pendente' | 'Fornecedor não identificado' | 'Valor não informado'>('Todas')
+  const [missingFilter, setMissingFilter] = useState<'Todos os registros' | 'Pendências de preenchimento' | 'Data de envio pendente' | 'Fornecedor não identificado' | 'Valor não informado'>('Todos os registros')
   const [refreshing, setRefreshing] = useState(false)
   const [notesPage, setNotesPage] = useState(1)
   const topMenuRef = useRef<HTMLDivElement>(null)
