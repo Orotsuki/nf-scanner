@@ -1,0 +1,16 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+supabase/functions/.env
+supabase/functions/.env.*
+
+# Dependencies and build output
+node_modules/
+dist/
+.vite/
+
+# Local tooling
+.DS_Store
+Thumbs.db
+*.log
