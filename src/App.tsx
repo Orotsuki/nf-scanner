@@ -1734,8 +1734,8 @@ function UserManagement({
       return
     }
 
-    if (newPassword.length < 6 || newPassword.length > 72) {
-      setMessage('A senha deve ter entre 6 e 72 caracteres.')
+    if (newPassword.length < 12 || newPassword.length > 72) {
+      setMessage('A senha deve ter entre 12 e 72 caracteres.')
       return
     }
 
@@ -1758,8 +1758,8 @@ function UserManagement({
   async function handleReset(user: ManagedUser) {
     const password = resetValues[user.id] ?? ''
 
-    if (password.length < 6 || password.length > 72) {
-      setMessage('A nova senha deve ter entre 6 e 72 caracteres.')
+    if (password.length < 12 || password.length > 72) {
+      setMessage('A nova senha deve ter entre 12 e 72 caracteres.')
       return
     }
 
