@@ -61,7 +61,7 @@ export default function App() {
   const lastSelectedNoteId = useRef<string | null>(null)
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
-  const [missingFilter, setMissingFilter] = useState<'Todas' | 'Com pendência' | 'Sem envio' | 'Sem fornecedor' | 'Sem valor'>('Todas')
+  const [missingFilter, setMissingFilter] = useState<'Todos os registros' | 'Pendências de preenchimento' | 'Data de envio pendente' | 'Fornecedor não identificado' | 'Valor não informado'>('Todas')
   const [refreshing, setRefreshing] = useState(false)
   const [notesPage, setNotesPage] = useState(1)
   const topMenuRef = useRef<HTMLDivElement>(null)
@@ -340,11 +340,11 @@ export default function App() {
     return notes.filter((note) => {
       const hasMissing = !note.dataEnvio || !note.fornecedor.trim() || note.valor == null || note.valor <= 0
       const matchesMissing =
-        missingFilter === 'Todas' ||
-        (missingFilter === 'Com pendência' && hasMissing) ||
-        (missingFilter === 'Sem envio' && !note.dataEnvio) ||
-        (missingFilter === 'Sem fornecedor' && !note.fornecedor.trim()) ||
-        (missingFilter === 'Sem valor' && (note.valor == null || note.valor <= 0))
+        missingFilter === 'Todos os registros' ||
+        (missingFilter === 'Pendências de preenchimento' && hasMissing) ||
+        (missingFilter === 'Data de envio pendente' && !note.dataEnvio) ||
+        (missingFilter === 'Fornecedor não identificado' && !note.fornecedor.trim()) ||
+        (missingFilter === 'Valor não informado' && (note.valor == null || note.valor <= 0))
 
       if (!matchesMissing) return false
       if (!q) return true
@@ -748,21 +748,20 @@ export default function App() {
           <div className="section-heading compact">
             <div>
               <h2>Notas fiscais cadastradas:</h2>
-              <p>{filteredNotes.length} de {notes.length} registros</p>
             </div>
             <div className="list-tools">
               <div className="filter-wrap">
-                <label htmlFor="missing-filter">Pendências</label>
+                <label htmlFor="missing-filter">Critério de preenchimento</label>
                 <select
                   id="missing-filter"
                   value={missingFilter}
                   onChange={(event) => setMissingFilter(event.target.value as typeof missingFilter)}
                 >
-                  <option>Todas</option>
-                  <option>Com pendência</option>
-                  <option>Sem envio</option>
-                  <option>Sem fornecedor</option>
-                  <option>Sem valor</option>
+                  <option>Todos os registros</option>
+                  <option>Pendências de preenchimento</option>
+                  <option>Data de envio pendente</option>
+                  <option>Fornecedor não identificado</option>
+                  <option>Valor não informado</option>
                 </select>
               </div>
               <div className="list-search-actions">
@@ -822,12 +821,12 @@ export default function App() {
               <thead>
                 <tr>
                   <th className="check-cell" aria-label="Selecionar" />
-                  <th>Número da NF</th>
+                  <th>Número da NF-e</th>
                   <th>CNPJ do emitente</th>
-                  <th>Fornecedor</th>
+                  <th>Razão social</th>
                   <th>Valor</th>
-                  <th>Data Cadastro</th>
-                  <th>Data Envio</th>
+                  <th>Data de cadastro</th>
+                  <th>Data de envio</th>
                   <th>Chave de acesso</th>
                   <th aria-label="Ações" />
                 </tr>
