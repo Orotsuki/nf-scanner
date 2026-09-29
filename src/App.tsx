@@ -20,7 +20,8 @@ import {
   upsertSupplier,
   deleteSupplier,
 } from './cloud'
-import { isSupabaseConfigured } from './supabase'
+import { isSupabaseConfigured, turnstileSiteKey } from './supabase'
+import Turnstile from './Turnstile'
 import { signInUsername } from './auth'
 import {
   createManagedUser,
@@ -1566,6 +1567,8 @@ function AuthScreen() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [captchaResetKey, setCaptchaResetKey] = useState(0)
 
   async function submit() {
     const normalizedUsername = username.trim().toLowerCase()
@@ -1580,15 +1583,22 @@ function AuthScreen() {
       return
     }
 
+    if (turnstileSiteKey && !captchaToken) {
+      setMessage('Conclua a verificação de segurança antes de entrar.')
+      return
+    }
+
     setBusy(true)
     setMessage(null)
 
     try {
-      await signInUsername(normalizedUsername, password)
+      await signInUsername(normalizedUsername, password, captchaToken || undefined)
     } catch (cause: unknown) {
       setMessage(getAuthErrorMessage(cause))
     } finally {
       setBusy(false)
+      setCaptchaToken('')
+      if (turnstileSiteKey) setCaptchaResetKey((value) => value + 1)
     }
   }
 
@@ -1654,6 +1664,18 @@ function AuthScreen() {
               )}
             </button>
           </div>
+
+          <Turnstile
+            key={captchaResetKey}
+            siteKey={turnstileSiteKey}
+            resetKey={captchaResetKey}
+            onToken={setCaptchaToken}
+            onReset={() => setCaptchaToken('')}
+            onError={() => {
+              setCaptchaToken('')
+              setMessage('Não foi possível concluir a verificação de segurança. Tente novamente.')
+            }}
+          />
 
           {message && <div className="auth-message error">{message}</div>}
 
