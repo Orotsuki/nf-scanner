@@ -23,6 +23,8 @@ function json(body: Record<string, unknown>, status = 200) {
     status,
     headers: {
       "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+      "Vary": "Origin",
     },
   });
 }
