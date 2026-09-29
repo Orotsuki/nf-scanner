@@ -1569,6 +1569,14 @@ function AuthScreen() {
   const [showPassword, setShowPassword] = useState(false)
   const [captchaToken, setCaptchaToken] = useState('')
   const [captchaResetKey, setCaptchaResetKey] = useState(0)
+  const handleCaptchaReset = useCallback(() => {
+    setCaptchaToken('')
+  }, [])
+
+  const handleCaptchaError = useCallback(() => {
+    setCaptchaToken('')
+    setMessage('Não foi possível concluir a verificação de segurança. Tente novamente.')
+  }, [])
 
   async function submit() {
     const normalizedUsername = username.trim().toLowerCase()
@@ -1670,11 +1678,8 @@ function AuthScreen() {
             siteKey={turnstileSiteKey}
             resetKey={captchaResetKey}
             onToken={setCaptchaToken}
-            onReset={() => setCaptchaToken('')}
-            onError={() => {
-              setCaptchaToken('')
-              setMessage('Não foi possível concluir a verificação de segurança. Tente novamente.')
-            }}
+            onReset={handleCaptchaReset}
+            onError={handleCaptchaError}
           />
 
           {message && <div className="auth-message error">{message}</div>}
