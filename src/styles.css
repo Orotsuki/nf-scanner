@@ -358,8 +358,8 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   box-shadow: 0 0 0 3px rgba(100,116,139,0.10);
 }
 .editable-cell-input.pending {
-  border-color: #fde68a;
-  background: #fffbeb;
+  border-color: #b86a76;
+  background: #fcebed;
 }
 .editable-cell-input::placeholder { color: #b45309; }
 .amount-input { min-width: 110px; text-align: right; }
