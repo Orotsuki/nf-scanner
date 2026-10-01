@@ -7,6 +7,7 @@ export type NotaFiscal = {
   chaveAcesso: string
   dataCadastro: string
   dataEnvio: string | null
+  naturezaOperacao: string
   syncPending?: boolean
 }
 
