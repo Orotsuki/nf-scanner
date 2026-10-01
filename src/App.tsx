@@ -1525,7 +1525,7 @@ function EditableNoteRow({
       </td>
       <td>
         <input
-          className="editable-cell-input amount-input"
+          className={`editable-cell-input amount-input ${valor.trim() === '' || parseMoney(valor) == null || parseMoney(valor) <= 0 ? 'pending' : ''}`}
           inputMode="decimal"
           value={valor}
           placeholder="0,00"
@@ -1545,7 +1545,7 @@ function EditableNoteRow({
       <td className="date-cell">{formatDateTime(note.dataCadastro)}</td>
       <td>
         <input
-          className="editable-cell-input control-date-input"
+          className={`editable-cell-input control-date-input ${note.dataEnvio ? '' : 'pending'}`}
           type="date"
           value={note.dataEnvio ?? ''}
           aria-label={`Data de envio à controladoria da NF ${note.numeroNF}`}
