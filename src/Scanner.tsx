@@ -525,7 +525,7 @@ export default function Scanner({ enabled, onDetected, scanTrigger = 0 }: Props)
 
         {!loadingCameras && !starting && !error && enabled && (
           <div className="scanner-help">
-            Enquadre o código dentro da área marcada
+            Posicione o QR Code ou código de barras na área marcada
           </div>
         )}
 
