@@ -295,6 +295,7 @@ export default function App() {
       valor: null,
       dataCadastro: new Date().toISOString(),
       dataEnvio: null,
+      naturezaOperacao: 'Venda',
       syncPending: true,
     }
 
@@ -828,6 +829,7 @@ export default function App() {
                   <th>Valor</th>
                   <th>Data de cadastro</th>
                   <th>Data de envio</th>
+                  <th>Natureza da operação</th>
                   <th>Chave de acesso</th>
                   <th aria-label="Ações" />
                 </tr>
@@ -1552,6 +1554,18 @@ function EditableNoteRow({
             dataEnvio: event.target.value || null,
           })}
         />
+      </td>
+      <td>
+        <select
+          className="editable-cell-input nature-select"
+          value={note.naturezaOperacao ?? 'Venda'}
+          aria-label={`Natureza da operação da NF ${note.numeroNF}`}
+          onChange={(event) => void onSave({ ...note, naturezaOperacao: event.target.value })}
+        >
+          <option>Venda</option>
+          <option>Retorno de conserto</option>
+          <option>Brinde / bonificação / doação</option>
+        </select>
       </td>
       <td><code>{note.chaveAcesso}</code></td>
       <td className="action-cell">
