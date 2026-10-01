@@ -1525,7 +1525,7 @@ function EditableNoteRow({
       </td>
       <td>
         <input
-          className={`editable-cell-input amount-input ${valor.trim() === '' || parseMoney(valor) == null || parseMoney(valor) <= 0 ? 'pending' : ''}`}
+          className={`editable-cell-input amount-input ${valor.trim() === '' || !(parseMoney(valor)! > 0) ? 'pending' : ''}`}
           inputMode="decimal"
           value={valor}
           placeholder="0,00"
