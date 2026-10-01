@@ -818,6 +818,20 @@ export default function App() {
             </div>
           )}
 
+          <div className="page-selection-toolbar">
+            <span>{paginatedNotes.length} notas nesta página</span>
+            <button type="button" className="btn ghost" onClick={() => setSelectedNoteIds((current) => {
+              const next = new Set(current)
+              const pageIds = paginatedNotes.map((note) => note.id)
+              const allSelected = pageIds.length > 0 && pageIds.every((id) => current.has(id))
+              pageIds.forEach((id) => allSelected ? next.delete(id) : next.add(id))
+              return next
+            })}>
+              {paginatedNotes.length > 0 && paginatedNotes.every((note) => selectedNoteIds.has(note.id)) ? 'Desmarcar página' : 'Selecionar página'}
+            </button>
+            {selectedNoteIds.size > 0 && <button type="button" className="btn ghost" onClick={() => { setSelectedNoteIds(new Set()); lastSelectedNoteId.current = null }}>Desmarcar todas</button>}
+          </div>
+
           <div className="table-wrap">
             <table>
               <thead>
@@ -1039,11 +1053,15 @@ function DashboardModal({
     })
   }, [notes, periodStart, periodEnd])
 
+  const salesNotes = useMemo(() => periodNotes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda'), [periodNotes])
+  const otherOperationNotes = useMemo(() => periodNotes.filter((note) => (note.naturezaOperacao ?? 'Venda') !== 'Venda'), [periodNotes])
+  const otherOperationValue = otherOperationNotes.reduce((sum, note) => sum + (typeof note.valor === 'number' && note.valor > 0 ? note.valor : 0), 0)
+
   const monthlyData = useMemo(() => {
     const buckets = new Map<string, { date: Date; quantidade: number; valor: number }>()
 
     if (period === 'all') {
-      periodNotes.forEach((note) => {
+      salesNotes.forEach((note) => {
         const date = new Date(note.dataCadastro)
         if (Number.isNaN(date.getTime())) return
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -1071,7 +1089,7 @@ function DashboardModal({
         cursor.setMonth(cursor.getMonth() + 1)
       }
 
-      periodNotes.forEach((note) => {
+      salesNotes.forEach((note) => {
         const date = new Date(note.dataCadastro)
         if (Number.isNaN(date.getTime())) return
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
@@ -1083,7 +1101,7 @@ function DashboardModal({
     }
 
     return [...buckets.values()].sort((a, b) => a.date.getTime() - b.date.getTime())
-  }, [period, periodNotes, periodStart, periodEnd])
+  }, [period, salesNotes, periodStart, periodEnd])
 
   const maxMonthlyQuantity = Math.max(1, ...monthlyData.map((item) => item.quantidade))
   const maxMonthlyValue = Math.max(1, ...monthlyData.map((item) => item.valor))
@@ -1105,7 +1123,7 @@ function DashboardModal({
       }
       return b.quantidade - a.quantidade || b.valor - a.valor || a.nome.localeCompare(b.nome)
     })
-  }, [periodNotes, supplierSort])
+  }, [salesNotes, supplierSort])
 
   const visibleSuppliers = showAllSuppliers ? supplierSummary : supplierSummary.slice(0, 10)
 
@@ -1131,7 +1149,12 @@ function DashboardModal({
         <div className="dashboard-main-card">
           <span>Total de NFs cadastradas</span>
           <strong>{notes.length}</strong>
-          <small>Considera todas as notas da base.</small>
+          <small>Inclui todas as naturezas de operação.</small>
+        </div>
+        <div className="dashboard-secondary-card">
+          <div><span>Outras operações (não venda)</span><strong>{otherOperationNotes.length} notas</strong></div>
+          <div><span>Valor registrado</span><strong>{formatCompactMoney(otherOperationValue)}</strong></div>
+          <small>Remessas, retornos, brindes e demais operações ficam separados dos indicadores de venda.</small>
         </div>
 
         <div className="dashboard-period-toolbar">
@@ -1158,7 +1181,7 @@ function DashboardModal({
         <div className="dashboard-chart-grid">
           <DashboardChart
             title="NFs cadastradas por mês"
-            subtitle="Quantidade de registros pela Data Cadastro"
+            subtitle="Somente notas classificadas como Venda, pela Data Cadastro"
             data={monthlyData.map((item) => ({
               label: formatMonthLabel(item.date),
               value: item.quantidade,
@@ -1170,7 +1193,7 @@ function DashboardModal({
 
           <DashboardChart
             title="Valor cadastrado por mês"
-            subtitle="Soma dos valores pela Data Cadastro"
+            subtitle="Soma das notas classificadas como Venda, pela Data Cadastro"
             data={monthlyData.map((item) => ({
               label: formatMonthLabel(item.date),
               value: item.valor,
@@ -1563,6 +1586,7 @@ function EditableNoteRow({
           onChange={(event) => void onSave({ ...note, naturezaOperacao: event.target.value })}
         >
           <option>Venda</option>
+          <option>Remessa</option>
           <option>Retorno de conserto</option>
           <option>Brinde / bonificação / doação</option>
         </select>
