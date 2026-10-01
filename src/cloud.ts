@@ -28,6 +28,7 @@ function cloudToNote(row: Record<string, unknown>): NotaFiscal {
     chaveAcesso: String(row.chave_acesso ?? ''),
     dataCadastro: String(row.data_cadastro ?? new Date().toISOString()),
     dataEnvio: row.data_envio ? String(row.data_envio) : null,
+    naturezaOperacao: String(row.natureza_operacao ?? 'Venda'),
     syncPending: false,
   }
 }
@@ -131,6 +132,8 @@ export async function upsertCloudNote(note: NotaFiscal): Promise<void> {
         chave_acesso: note.chaveAcesso,
         data_cadastro: note.dataCadastro,
         data_envio: note.dataEnvio,
+      natureza_operacao: note.naturezaOperacao ?? 'Venda',
+        natureza_operacao: note.naturezaOperacao ?? 'Venda',
       },
       { onConflict: 'user_id,chave_acesso' },
     )
