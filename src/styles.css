@@ -2572,3 +2572,17 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .dashboard-sort-heading:hover,.dashboard-sort-heading.active { color:#58b5ff; }
 .sort-indicator { display:inline-block; width:12px; }
 @media (max-width:560px) { .dashboard-supplier-head { grid-template-columns:minmax(0,1fr) 70px 95px; } .dashboard-sort-heading { font-size:10px; } }
+
+.dashboard-main-card-triple { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.dashboard-main-metric { min-width:0; display:flex; flex-direction:column; gap:5px; }
+.dashboard-main-metric + .dashboard-main-metric { border-left:1px solid rgba(153,190,225,.24); padding-left:16px; }
+.dashboard-main-card-triple .dashboard-main-metric span { display:block; }
+.dashboard-main-card-triple .dashboard-main-metric strong { display:block; }
+.dashboard-main-card-triple .dashboard-main-metric small { display:block; }
+@media (max-width:560px) {
+ .dashboard-main-card-triple { gap:8px; }
+ .dashboard-main-metric + .dashboard-main-metric { padding-left:8px; }
+ .dashboard-main-card-triple .dashboard-main-metric span { font-size:9px; line-height:1.25; }
+ .dashboard-main-card-triple .dashboard-main-metric strong { font-size:22px; }
+ .dashboard-main-card-triple .dashboard-main-metric small { font-size:9px; }
+}
