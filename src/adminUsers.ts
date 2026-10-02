@@ -91,3 +91,10 @@ export async function deleteManagedUser(userId: string): Promise<void> {
     body: JSON.stringify({ userId }),
   })
 }
+
+export async function updateManagedUsername(userId: string, username: string): Promise<void> {
+  await callAdmin('', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'update_username', userId, username }),
+  })
+}
