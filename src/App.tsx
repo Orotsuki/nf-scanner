@@ -989,6 +989,9 @@ function DashboardModal({
   }
   const [showAllSuppliers, setShowAllSuppliers] = useState(false)
 
+  const totalSalesNotes = notes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda').length
+  const totalRemittanceNotes = notes.filter((note) => note.naturezaOperacao === 'Remessa').length
+
   const periodLabel = {
     '6m': 'Últimos 6 meses',
     '12m': 'Últimos 12 meses',
@@ -1130,10 +1133,22 @@ function DashboardModal({
           <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <div className="dashboard-main-card">
-          <span>Total de NFs cadastradas</span>
-          <strong>{notes.length}</strong>
-          <small>Inclui todas as naturezas de operação.</small>
+        <div className="dashboard-main-card dashboard-main-card-triple">
+          <div className="dashboard-main-metric">
+            <span>Total de NFs cadastradas</span>
+            <strong>{notes.length}</strong>
+            <small>Todas as naturezas</small>
+          </div>
+          <div className="dashboard-main-metric">
+            <span>Total de NFs de venda</span>
+            <strong>{totalSalesNotes}</strong>
+            <small>Natureza: Venda</small>
+          </div>
+          <div className="dashboard-main-metric">
+            <span>Total de NFs de remessa</span>
+            <strong>{totalRemittanceNotes}</strong>
+            <small>Natureza: Remessa</small>
+          </div>
         </div>
        <div className="dashboard-period-toolbar">
           <div>
