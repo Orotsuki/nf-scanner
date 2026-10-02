@@ -207,6 +207,28 @@ Deno.serve(async (req) => {
         });
       }
 
+      if (action === "update_username") {
+        const userId = typeof body?.userId === "string" ? body.userId : "";
+        const username = validateUsername(typeof body?.username === "string" ? body.username : "");
+        if (!userId || !username) return json({ error: "Usuário ou nome inválido." }, 400);
+        const { data: target, error: targetError } = await supabase.auth.admin.getUserById(userId);
+        if (targetError || !target.user) return json({ error: "Usuário não encontrado." }, 404);
+        if (target.user.app_metadata?.role === "admin" && target.user.id !== adminUser.id) {
+          return json({ error: "O nome de outro administrador não pode ser alterado por esta tela." }, 403);
+        }
+        const email = await usernameEmail(username);
+        const { data: existing } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (existing.users.some((item) => item.id !== userId && item.email === email)) {
+          return json({ error: "Este nome de usuário já existe." }, 409);
+        }
+        const { error } = await supabase.auth.admin.updateUserById(userId, {
+          email,
+          user_metadata: { ...target.user.user_metadata, username },
+        });
+        if (error) return json({ error: error.message }, 400);
+        return json({ success: true });
+      }
+
       if (action === "reset_password") {
         const userId = typeof body?.userId === "string" ? body.userId : "";
         const password = typeof body?.password === "string" ? body.password : "";
