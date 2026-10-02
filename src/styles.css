@@ -2490,3 +2490,29 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 .dashboard-secondary-card span { color:#c4a9b3; font-size:11px; }
 .dashboard-secondary-card strong { color:#f2dce2; font-size:17px; }
 .dashboard-secondary-card small { flex-basis:100%; color:#b99eaa; font-size:11px; }
+
+/* Gmail-like bulk selection */
+.selection-head { position:relative; text-align:left; }
+.selection-control { display:flex; align-items:center; gap:2px; position:relative; }
+.selection-control input { width:15px; height:15px; accent-color:#1687d9; margin:0; }
+.selection-menu-trigger { border:0; background:transparent; color:#9bb1c7; padding:2px 4px; cursor:pointer; font-size:12px; }
+.selection-menu,.supplier-action-menu { position:absolute; z-index:30; top:calc(100% + 5px); left:0; min-width:155px; padding:5px 0; border:1px solid #284968; border-radius:8px; background:#10243a; box-shadow:0 8px 24px #0006; }
+.selection-menu button,.supplier-action-menu button { display:block; width:100%; border:0; background:transparent; color:#eaf3ff; text-align:left; padding:8px 12px; font-size:12px; cursor:pointer; white-space:nowrap; }
+.selection-menu button:hover,.supplier-action-menu button:hover { background:#1a3855; }
+.supplier-toolbar { align-items:center; margin-top:8px; }
+.supplier-add-small { min-height:30px; padding:0 11px; font-size:11px; white-space:nowrap; }
+.supplier-list { gap:3px; margin-top:5px; }
+.supplier-row { padding:5px 9px; gap:8px; min-height:36px; border-radius:8px; }
+.supplier-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#eaf3ff; font-size:12px; }
+.supplier-row-menu { position:relative; justify-self:end; }
+.supplier-more-btn { width:30px; height:28px; border:1px solid transparent; border-radius:6px; background:transparent; color:#a9bed2; font-size:20px; line-height:1; cursor:pointer; }
+.supplier-more-btn:hover { border-color:#315a81; background:#102a44; }
+.supplier-action-menu { left:auto; right:0; min-width:110px; }
+.supplier-action-menu .danger-text { color:#ff8992; }
+.supplier-edit-area { display:flex; align-items:center; gap:5px; min-width:0; }
+.supplier-edit-area input { flex:1; min-width:0; }
+.supplier-menu-action { border:1px solid #315a81; border-radius:5px; background:#102a44; color:#dcecff; padding:5px 7px; font-size:10px; cursor:pointer; }
+@media (max-width:720px) {
+  .supplier-row { grid-template-columns:1fr 1fr 32px; }
+  .supplier-edit-area { grid-column:2; flex-wrap:wrap; }
+}
