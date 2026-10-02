@@ -2558,3 +2558,11 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
   margin-top:-2px;
 }
 .check-cell input[type="checkbox"]:indeterminate::before { content:""; width:8px; height:2px; background:#fff; }
+
+/* User requested compact management and clear value field width */
+.amount-field { min-width:140px; width:100%; }
+.amount-field .amount-input { flex:1 1 105px; width:105px; min-width:105px; }
+.list-tools { gap:10px; }
+.user-actions { position:relative; }
+.user-row-menu { position:relative; }
+.user-action-menu { top:calc(100% + 5px); }
