@@ -2516,3 +2516,15 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   .supplier-row { grid-template-columns:1fr 1fr 32px; }
   .supplier-edit-area { grid-column:2; flex-wrap:wrap; }
 }
+
+.selection-control input { appearance:none; width:15px; height:15px; border:1px solid #52718e; border-radius:3px; background:#0b2035; cursor:pointer; position:relative; }
+.selection-control input:checked,.selection-control input:indeterminate { background:#1687d9; border-color:#42a5f5; }
+.selection-control input:checked::after { content:''; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.selection-control input:indeterminate::after { content:''; position:absolute; left:3px; top:6px; width:7px; height:2px; background:#fff; }
+.amount-field { display:flex; align-items:center; gap:4px; }
+.amount-field > span { color:#9db6ce; font-size:11px; white-space:nowrap; }
+.amount-field .amount-input { min-width:0; width:100%; }
+.refresh-btn.is-refreshing { animation:none !important; }
+.refresh-icon { display:inline-block; }
+.refresh-btn.is-refreshing .refresh-icon { animation:refresh-spin .75s linear infinite; }
+.supplier-add-small { min-height:30px; padding:0 11px; font-size:11px; white-space:nowrap; }
