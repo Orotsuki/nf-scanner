@@ -67,6 +67,14 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false)
   const [notesPage, setNotesPage] = useState(1)
   const topMenuRef = useRef<HTMLDivElement>(null)
+  const selectionMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!selectionMenuOpen) return
+    const close = (event: MouseEvent) => { if (selectionMenuRef.current && !selectionMenuRef.current.contains(event.target as Node)) setSelectionMenuOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [selectionMenuOpen])
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -824,7 +832,7 @@ export default function App() {
               <thead>
                 <tr>
                   <th className="check-cell selection-head">
-                    <div className="selection-control">
+                    <div className="selection-control" ref={selectionMenuRef}>
                       <input type="checkbox" aria-label="Selecionar todas as notas" checked={paginatedNotes.length > 0 && paginatedNotes.every((note) => selectedNoteIds.has(note.id))} ref={(el) => { if (el) el.indeterminate = paginatedNotes.some((note) => selectedNoteIds.has(note.id)) && !paginatedNotes.every((note) => selectedNoteIds.has(note.id)) }} onChange={() => { const ids = paginatedNotes.map((note) => note.id); const all = ids.length > 0 && ids.every((id) => selectedNoteIds.has(id)); setSelectedNoteIds((current) => { const next = new Set(current); ids.forEach((id) => all ? next.delete(id) : next.add(id)); return next }); lastSelectedNoteId.current = null }} />
                       <button type="button" className="selection-menu-trigger" aria-label="Opções de seleção" onClick={() => setSelectionMenuOpen((v) => !v)}>▾</button>
                       {selectionMenuOpen && <div className="selection-menu">
@@ -1451,6 +1459,13 @@ function SupplierRow({
   const [nome, setNome] = useState(supplier.nome)
   const [editing, setEditing] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = (event: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [menuOpen])
 
   useEffect(() => setNome(supplier.nome), [supplier.nome])
 
@@ -1471,7 +1486,7 @@ function SupplierRow({
           <button type="button" className="supplier-menu-action" onClick={() => { setNome(supplier.nome); setEditing(false) }}>Cancelar</button>
         </div>
       ) : <span className="supplier-name">{supplier.nome}</span>}
-      <div className="supplier-row-menu">
+      <div className="supplier-row-menu" ref={menuRef}>
         <button type="button" className="supplier-more-btn" aria-label="Ações do fornecedor" onClick={() => setMenuOpen((v) => !v)}>⋯</button>
         {menuOpen && <div className="supplier-action-menu">
           <button type="button" onClick={() => { setEditing(true); setMenuOpen(false) }}>Editar</button>
