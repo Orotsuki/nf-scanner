@@ -2528,3 +2528,33 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 .refresh-icon { display:inline-block; }
 .refresh-btn.is-refreshing .refresh-icon { animation:refresh-spin .75s linear infinite; }
 .supplier-add-small { min-height:30px; padding:0 11px; font-size:11px; white-space:nowrap; }
+
+/* Gmail-style aligned checkboxes in the NF table */
+th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !important; padding-right:8px !important; text-align:left !important; }
+.selection-control { justify-content:flex-start; margin:0; }
+.check-cell input[type="checkbox"] {
+  appearance:none;
+  -webkit-appearance:none;
+  display:inline-grid;
+  place-content:center;
+  width:16px;
+  height:16px;
+  margin:0;
+  vertical-align:middle;
+  border:1px solid #66839d;
+  border-radius:3px;
+  background:#0b2035;
+  cursor:pointer;
+}
+.check-cell input[type="checkbox"]:checked,
+.check-cell input[type="checkbox"]:indeterminate { background:#1687d9; border-color:#42a5f5; }
+.check-cell input[type="checkbox"]:checked::before {
+  content:"";
+  width:5px;
+  height:9px;
+  border:solid #fff;
+  border-width:0 2px 2px 0;
+  transform:rotate(45deg);
+  margin-top:-2px;
+}
+.check-cell input[type="checkbox"]:indeterminate::before { content:""; width:8px; height:2px; background:#fff; }
