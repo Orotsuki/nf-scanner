@@ -982,6 +982,11 @@ function DashboardModal({
 
   const [period, setPeriod] = useState<DashboardPeriod>('6m')
   const [supplierSort, setSupplierSort] = useState<'quantidade' | 'valor'>('quantidade')
+  const [supplierSortDirection, setSupplierSortDirection] = useState<'asc' | 'desc'>('desc')
+  const toggleSupplierSort = (key: 'quantidade' | 'valor') => {
+    if (supplierSort === key) setSupplierSortDirection((direction) => direction === 'desc' ? 'asc' : 'desc')
+    else { setSupplierSort(key); setSupplierSortDirection('desc') }
+  }
   const [showAllSuppliers, setShowAllSuppliers] = useState(false)
 
   const periodLabel = {
@@ -1097,12 +1102,12 @@ function DashboardModal({
     })
 
     return [...map.values()].sort((a, b) => {
-      if (supplierSort === 'valor') {
-        return b.valor - a.valor || b.quantidade - a.quantidade || a.nome.localeCompare(b.nome)
-      }
-      return b.quantidade - a.quantidade || b.valor - a.valor || a.nome.localeCompare(b.nome)
+      const primary = supplierSort === 'valor' ? a.valor - b.valor : a.quantidade - b.quantidade
+      const secondary = supplierSort === 'valor' ? a.quantidade - b.quantidade : a.valor - b.valor
+      const result = primary || secondary || a.nome.localeCompare(b.nome)
+      return supplierSortDirection === 'asc' ? result : -result
     })
-  }, [salesNotes, supplierSort])
+  }, [salesNotes, supplierSort, supplierSortDirection])
 
   const visibleSuppliers = showAllSuppliers ? supplierSummary : supplierSummary.slice(0, 10)
 
@@ -1183,28 +1188,17 @@ function DashboardModal({
               <h3>Resumo por fornecedor</h3>
               <p>{supplierSummary.length} fornecedor{supplierSummary.length === 1 ? '' : 'es'} no período</p>
             </div>
-            <div className="dashboard-sort-actions">
-              <button
-                type="button"
-                className={supplierSort === 'quantidade' ? 'active' : ''}
-                onClick={() => setSupplierSort('quantidade')}
-              >
-                Nº de NFs
-              </button>
-              <button
-                type="button"
-                className={supplierSort === 'valor' ? 'active' : ''}
-                onClick={() => setSupplierSort('valor')}
-              >
-                Valor total
-              </button>
-            </div>
+
           </div>
 
           <div className="dashboard-supplier-head">
             <span>Fornecedor</span>
-            <span>Nº de NFs</span>
-            <span>Valor total</span>
+            <button type="button" className={`dashboard-sort-heading ${supplierSort === 'quantidade' ? 'active' : ''}`} onClick={() => toggleSupplierSort('quantidade')} aria-label="Ordenar por número de NFs">
+              Nº de NFs <span className="sort-indicator">{supplierSort === 'quantidade' ? (supplierSortDirection === 'asc' ? '↑' : '↓') : ''}</span>
+            </button>
+            <button type="button" className={`dashboard-sort-heading ${supplierSort === 'valor' ? 'active' : ''}`} onClick={() => toggleSupplierSort('valor')} aria-label="Ordenar por valor total">
+              Valor total <span className="sort-indicator">{supplierSort === 'valor' ? (supplierSortDirection === 'asc' ? '↑' : '↓') : ''}</span>
+            </button>
           </div>
 
           <div className="dashboard-supplier-list">
