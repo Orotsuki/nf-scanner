@@ -783,7 +783,7 @@ export default function App() {
                   aria-label="Atualizar notas"
                   title="Atualizar"
                 >
-                  ↻
+                  <span className="refresh-icon">↻</span>
                 </button>
               </div>
             </div>
@@ -825,7 +825,7 @@ export default function App() {
                 <tr>
                   <th className="check-cell selection-head">
                     <div className="selection-control">
-                      <input type="checkbox" aria-label="Selecionar todas as notas" checked={notes.length > 0 && selectedNoteIds.size === notes.length} ref={(el) => { if (el) el.indeterminate = selectedNoteIds.size > 0 && selectedNoteIds.size < notes.length }} onChange={() => { const all = notes.length > 0 && selectedNoteIds.size === notes.length; setSelectedNoteIds(all ? new Set() : new Set(notes.map((note) => note.id))); lastSelectedNoteId.current = null }} />
+                      <input type="checkbox" aria-label="Selecionar todas as notas" checked={paginatedNotes.length > 0 && paginatedNotes.every((note) => selectedNoteIds.has(note.id))} ref={(el) => { if (el) el.indeterminate = paginatedNotes.some((note) => selectedNoteIds.has(note.id)) && !paginatedNotes.every((note) => selectedNoteIds.has(note.id)) }} onChange={() => { const ids = paginatedNotes.map((note) => note.id); const all = ids.length > 0 && ids.every((id) => selectedNoteIds.has(id)); setSelectedNoteIds((current) => { const next = new Set(current); ids.forEach((id) => all ? next.delete(id) : next.add(id)); return next }); lastSelectedNoteId.current = null }} />
                       <button type="button" className="selection-menu-trigger" aria-label="Opções de seleção" onClick={() => setSelectionMenuOpen((v) => !v)}>▾</button>
                       {selectionMenuOpen && <div className="selection-menu">
                         <button type="button" onClick={() => { setSelectedNoteIds(new Set(notes.map((note) => note.id))); setSelectionMenuOpen(false); lastSelectedNoteId.current = null }}>Todas</button>
@@ -1105,7 +1105,7 @@ function DashboardModal({
   const supplierSummary = useMemo<SupplierSummary[]>(() => {
     const map = new Map<string, SupplierSummary>()
 
-    periodNotes.forEach((note) => {
+    salesNotes.forEach((note) => {
       const nome = note.fornecedor.trim() || 'Fornecedor não cadastrado'
       const existing = map.get(nome) ?? { nome, quantidade: 0, valor: 0 }
       existing.quantidade += 1
@@ -1147,13 +1147,7 @@ function DashboardModal({
           <strong>{notes.length}</strong>
           <small>Inclui todas as naturezas de operação.</small>
         </div>
-        <div className="dashboard-secondary-card">
-          <div><span>Outras operações (não venda)</span><strong>{otherOperationNotes.length} notas</strong></div>
-          <div><span>Valor registrado</span><strong>{formatCompactMoney(otherOperationValue)}</strong></div>
-          <small>Remessas, retornos, brindes e demais operações ficam separados dos indicadores de venda.</small>
-        </div>
-
-        <div className="dashboard-period-toolbar">
+       <div className="dashboard-period-toolbar">
           <div>
             <strong>Período de análise</strong>
             <span>{periodLabel}</span>
@@ -1416,7 +1410,7 @@ function SupplierManagement({
         )}
 
         <div className="supplier-toolbar">
-          <div className="user-list-title">Fornecedores cadastrados:</div>
+          <button className="btn primary supplier-add-small" type="button" onClick={() => setAddOpen((value) => !value)}>{addOpen ? "Fechar" : "+ Adicionar"}</button>
           <div className="search-wrap supplier-search">
             <span>⌕</span>
             <input value={searchSupplier} onChange={(event) => setSearchSupplier(event.target.value)} placeholder="Pesquisar fornecedor ou CNPJ" />
@@ -1545,7 +1539,7 @@ function EditableNoteRow({
         />
       </td>
       <td>
-        <input
+        <div className="amount-field"><span>R$</span><input
           className={`editable-cell-input amount-input ${valor.trim() === '' || !(parseMoney(valor)! > 0) ? 'pending' : ''}`}
           inputMode="decimal"
           value={valor}
@@ -1561,7 +1555,7 @@ function EditableNoteRow({
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.currentTarget.blur()
           }}
-        />
+        /></div>
       </td>
       <td className="date-cell">{formatDateTime(note.dataCadastro)}</td>
       <td>
