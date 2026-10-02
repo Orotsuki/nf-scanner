@@ -990,7 +990,7 @@ function DashboardModal({
   const [showAllSuppliers, setShowAllSuppliers] = useState(false)
 
   const totalSalesNotes = notes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda').length
-  const totalRemittanceNotes = notes.filter((note) => note.naturezaOperacao === 'Remessa').length
+  const totalRemittanceNotes = notes.filter((note) => (note.naturezaOperacao ?? '').trim().toLocaleLowerCase('pt-BR').startsWith('remessa')).length
 
   const periodLabel = {
     '6m': 'Últimos 6 meses',
@@ -1150,28 +1150,25 @@ function DashboardModal({
             <small>Natureza: Remessa</small>
           </div>
         </div>
-       <div className="dashboard-period-toolbar">
-          <div>
-            <strong>Período de análise</strong>
-            <span>{periodLabel}</span>
+       <div className="dashboard-chart-area">
+          <div className="dashboard-chart-area-toolbar">
+            <strong>Indicadores por período</strong>
+            <select
+              value={period}
+              onChange={(event) => {
+                setPeriod(event.target.value as DashboardPeriod)
+                setShowAllSuppliers(false)
+              }}
+              aria-label="Período do dashboard"
+            >
+              <option value="6m">Últimos 6 meses</option>
+              <option value="12m">Últimos 12 meses</option>
+              <option value="currentYear">Este ano</option>
+              <option value="previousYear">Ano anterior</option>
+              <option value="all">Todo o histórico</option>
+            </select>
           </div>
-          <select
-            value={period}
-            onChange={(event) => {
-              setPeriod(event.target.value as DashboardPeriod)
-              setShowAllSuppliers(false)
-            }}
-            aria-label="Período do dashboard"
-          >
-            <option value="6m">Últimos 6 meses</option>
-            <option value="12m">Últimos 12 meses</option>
-            <option value="currentYear">Este ano</option>
-            <option value="previousYear">Ano anterior</option>
-            <option value="all">Todo o histórico</option>
-          </select>
-        </div>
-
-        <div className="dashboard-chart-grid">
+          <div className="dashboard-chart-grid">
           <DashboardChart
             title="NFs cadastradas por mês"
             subtitle="Somente notas classificadas como Venda, pela Data Cadastro"
@@ -1179,6 +1176,7 @@ function DashboardModal({
               label: formatMonthLabel(item.date),
               value: item.quantidade,
               width: (item.quantidade / maxMonthlyQuantity) * 100,
+              height: (item.quantidade / maxMonthlyQuantity) * 100,
               display: String(item.quantidade),
             }))}
             emptyText="Nenhuma NF cadastrada neste período."
@@ -1191,10 +1189,12 @@ function DashboardModal({
               label: formatMonthLabel(item.date),
               value: item.valor,
               width: (item.valor / maxMonthlyValue) * 100,
+              height: (item.valor / maxMonthlyValue) * 100,
               display: formatCompactMoney(item.valor),
             }))}
             emptyText="Nenhum valor cadastrado neste período."
           />
+          </div>
         </div>
 
         <section className="dashboard-suppliers">
@@ -1253,7 +1253,7 @@ function DashboardChart({
 }: {
   title: string
   subtitle: string
-  data: Array<{ label: string; value: number; width: number; display: string }>
+  data: Array<{ label: string; value: number; width: number; height?: number; display: string }>
   emptyText: string
 }) {
   return (
@@ -1265,14 +1265,14 @@ function DashboardChart({
         </div>
       </div>
 
-      <div className="dashboard-bars">
+      <div className="dashboard-bars dashboard-bars-vertical">
         {data.map((item) => (
-          <div className="dashboard-bar-row" key={item.label}>
-            <span className="dashboard-bar-label">{item.label}</span>
-            <div className="dashboard-bar-track">
-              <div className="dashboard-bar-fill" style={{ width: `${Math.max(item.width, item.value > 0 ? 5 : 0)}%` }} />
-            </div>
+          <div className="dashboard-bar-column" key={item.label}>
             <strong>{item.display}</strong>
+            <div className="dashboard-bar-track-vertical">
+              <div className="dashboard-bar-fill" style={{ height: `${Math.max(item.height ?? item.width, item.value > 0 ? 5 : 0)}%` }} />
+            </div>
+            <span className="dashboard-bar-label">{item.label}</span>
           </div>
         ))}
         {!data.length && <div className="dashboard-empty">{emptyText}</div>}
