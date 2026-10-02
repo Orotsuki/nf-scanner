@@ -2566,3 +2566,9 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .user-actions { position:relative; }
 .user-row-menu { position:relative; }
 .user-action-menu { top:calc(100% + 5px); }
+
+.dashboard-supplier-head { display:grid; grid-template-columns:minmax(0,1fr) 100px 130px; align-items:center; }
+.dashboard-sort-heading { border:0; background:transparent; color:inherit; font:inherit; font-weight:700; text-align:right; cursor:pointer; padding:5px 2px; white-space:nowrap; }
+.dashboard-sort-heading:hover,.dashboard-sort-heading.active { color:#58b5ff; }
+.sort-indicator { display:inline-block; width:12px; }
+@media (max-width:560px) { .dashboard-supplier-head { grid-template-columns:minmax(0,1fr) 70px 95px; } .dashboard-sort-heading { font-size:10px; } }
