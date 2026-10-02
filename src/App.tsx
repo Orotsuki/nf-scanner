@@ -64,7 +64,6 @@ export default function App() {
   const lastSelectedNoteId = useRef<string | null>(null)
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
-  const [missingFilter, setMissingFilter] = useState<'Todos os registros' | 'Pendências de preenchimento' | 'Data de envio pendente' | 'Fornecedor não identificado' | 'Valor não informado'>('Todos os registros')
   const [refreshing, setRefreshing] = useState(false)
   const [notesPage, setNotesPage] = useState(1)
   const topMenuRef = useRef<HTMLDivElement>(null)
@@ -350,15 +349,6 @@ export default function App() {
     const q = search.trim().toLowerCase()
 
     return notes.filter((note) => {
-      const hasMissing = !note.dataEnvio || !note.fornecedor.trim() || note.valor == null || note.valor <= 0
-      const matchesMissing =
-        missingFilter === 'Todos os registros' ||
-        (missingFilter === 'Pendências de preenchimento' && hasMissing) ||
-        (missingFilter === 'Data de envio pendente' && !note.dataEnvio) ||
-        (missingFilter === 'Fornecedor não identificado' && !note.fornecedor.trim()) ||
-        (missingFilter === 'Valor não informado' && (note.valor == null || note.valor <= 0))
-
-      if (!matchesMissing) return false
       if (!q) return true
 
       return (
@@ -369,14 +359,14 @@ export default function App() {
         note.chaveAcesso.includes(q)
       )
     })
-  }, [notes, search, missingFilter])
+  }, [notes, search])
 
   const NOTES_PER_PAGE = 100
   const notesTotalPages = Math.max(1, Math.ceil(filteredNotes.length / NOTES_PER_PAGE))
 
   useEffect(() => {
     setNotesPage(1)
-  }, [search, missingFilter])
+  }, [search])
 
   useEffect(() => {
     if (notesPage > notesTotalPages) {
