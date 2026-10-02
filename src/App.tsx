@@ -1058,8 +1058,6 @@ function DashboardModal({
   }, [notes, periodStart, periodEnd])
 
   const salesNotes = useMemo(() => periodNotes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda'), [periodNotes])
-  const otherOperationNotes = useMemo(() => periodNotes.filter((note) => (note.naturezaOperacao ?? 'Venda') !== 'Venda'), [periodNotes])
-  const otherOperationValue = otherOperationNotes.reduce((sum, note) => sum + (typeof note.valor === 'number' && note.valor > 0 ? note.valor : 0), 0)
 
   const monthlyData = useMemo(() => {
     const buckets = new Map<string, { date: Date; quantidade: number; valor: number }>()
