@@ -2586,3 +2586,26 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
  .dashboard-main-card-triple .dashboard-main-metric strong { font-size:22px; }
  .dashboard-main-card-triple .dashboard-main-metric small { font-size:9px; }
 }
+
+/* Dashboard: centered metric cells and integrated period selector with vertical charts */
+.dashboard-main-card-triple .dashboard-main-metric { align-items:center; text-align:center; justify-content:center; }
+.dashboard-main-card-triple .dashboard-main-metric + .dashboard-main-metric { border-left:1px solid rgba(153,190,225,.24); }
+.dashboard-chart-area { margin-bottom:14px; border:1px solid #214365; border-radius:14px; background:#0b1c30; padding:12px; }
+.dashboard-chart-area-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.dashboard-chart-area-toolbar strong { color:#eaf3ff; font-size:12px; }
+.dashboard-chart-area-toolbar select { min-width:170px; height:34px; padding:0 10px; border:1px solid #315878; border-radius:8px; background:#0b2035; color:#f4f8ff; }
+.dashboard-chart-area .dashboard-chart-grid { margin:0; }
+.dashboard-chart-area .dashboard-chart-card { background:transparent; border:0; padding:8px; }
+.dashboard-bars-vertical { display:flex; align-items:stretch; gap:8px; min-height:170px; overflow-x:auto; padding:4px 0 0; }
+.dashboard-bar-column { flex:1 0 28px; min-width:28px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.dashboard-bar-column > strong { color:#eaf3ff; font-size:10px; white-space:nowrap; }
+.dashboard-bar-track-vertical { width: min(100%,24px); height:126px; display:flex; align-items:flex-end; overflow:hidden; border-radius:5px 5px 0 0; background:#142f4a; }
+.dashboard-bar-track-vertical .dashboard-bar-fill { width:100%; min-height:0; border-radius:5px 5px 0 0; background:#2498f5; transition:height .2s ease; }
+.dashboard-bars-vertical .dashboard-bar-label { width:100%; text-align:center; font-size:9px; }
+@media(max-width:560px) {
+ .dashboard-chart-area-toolbar { align-items:flex-start; flex-direction:column; }
+ .dashboard-chart-area-toolbar select { width:100%; }
+ .dashboard-chart-area .dashboard-chart-grid { grid-template-columns:minmax(0,1fr); }
+ .dashboard-bars-vertical { min-height:145px; }
+ .dashboard-bar-track-vertical { height:105px; }
+}
