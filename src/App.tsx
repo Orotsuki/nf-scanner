@@ -59,6 +59,7 @@ export default function App() {
   const [supplierManagementOpen, setSupplierManagementOpen] = useState(false)
   const [topMenuOpen, setTopMenuOpen] = useState(false)
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set())
+  const [selectionMenuOpen, setSelectionMenuOpen] = useState(false)
   const lastSelectedNoteId = useRef<string | null>(null)
   const [bulkSendDate, setBulkSendDate] = useState('')
   const [recentNoteId, setRecentNoteId] = useState<string | null>(null)
@@ -818,25 +819,20 @@ export default function App() {
             </div>
           )}
 
-          <div className="page-selection-toolbar">
-            <span>{paginatedNotes.length} notas nesta página</span>
-            <button type="button" className="btn ghost" onClick={() => setSelectedNoteIds((current) => {
-              const next = new Set(current)
-              const pageIds = paginatedNotes.map((note) => note.id)
-              const allSelected = pageIds.length > 0 && pageIds.every((id) => current.has(id))
-              pageIds.forEach((id) => allSelected ? next.delete(id) : next.add(id))
-              return next
-            })}>
-              {paginatedNotes.length > 0 && paginatedNotes.every((note) => selectedNoteIds.has(note.id)) ? 'Desmarcar página' : 'Selecionar página'}
-            </button>
-            {selectedNoteIds.size > 0 && <button type="button" className="btn ghost" onClick={() => { setSelectedNoteIds(new Set()); lastSelectedNoteId.current = null }}>Desmarcar todas</button>}
-          </div>
-
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th className="check-cell" aria-label="Selecionar" />
+                  <th className="check-cell selection-head">
+                    <div className="selection-control">
+                      <input type="checkbox" aria-label="Selecionar todas as notas" checked={notes.length > 0 && selectedNoteIds.size === notes.length} ref={(el) => { if (el) el.indeterminate = selectedNoteIds.size > 0 && selectedNoteIds.size < notes.length }} onChange={() => { const all = notes.length > 0 && selectedNoteIds.size === notes.length; setSelectedNoteIds(all ? new Set() : new Set(notes.map((note) => note.id))); lastSelectedNoteId.current = null }} />
+                      <button type="button" className="selection-menu-trigger" aria-label="Opções de seleção" onClick={() => setSelectionMenuOpen((v) => !v)}>▾</button>
+                      {selectionMenuOpen && <div className="selection-menu">
+                        <button type="button" onClick={() => { setSelectedNoteIds(new Set(notes.map((note) => note.id))); setSelectionMenuOpen(false); lastSelectedNoteId.current = null }}>Todas</button>
+                        <button type="button" onClick={() => { setSelectedNoteIds(new Set(notes.filter((note) => !note.dataEnvio).map((note) => note.id))); setSelectionMenuOpen(false); lastSelectedNoteId.current = null }}>Sem data de envio</button>
+                      </div>}
+                    </div>
+                  </th>
                   <th>Número da NF-e</th>
                   <th>CNPJ do emitente</th>
                   <th>Razão social</th>
@@ -1398,10 +1394,6 @@ function SupplierManagement({
           <button className="icon-btn modal-close" onClick={onClose} aria-label="Fechar">×</button>
         </div>
 
-        <button className="btn primary add-user-toggle" type="button" onClick={() => setAddOpen((value) => !value)}>
-          {addOpen ? 'Fechar cadastro' : 'Adicionar fornecedor'}
-        </button>
-
         {addOpen && (
           <div className="user-create-box">
             <div className="user-create-grid supplier-create-grid">
@@ -1463,29 +1455,35 @@ function SupplierRow({
   onDelete: (id: string) => Promise<void>
 }) {
   const [nome, setNome] = useState(supplier.nome)
+  const [editing, setEditing] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => setNome(supplier.nome), [supplier.nome])
+
+  async function saveEdit() {
+    const value = nome.trim()
+    if (value && value !== supplier.nome) await onSave(supplier.cnpj, value)
+    setEditing(false)
+    setMenuOpen(false)
+  }
 
   return (
     <div className="supplier-row">
       <code>{supplier.cnpj}</code>
-      <input
-        className="editable-cell-input"
-        value={nome}
-        onChange={(event) => setNome(event.target.value)}
-        onBlur={() => {
-          if (nome.trim() !== supplier.nome) {
-            void onSave(supplier.cnpj, nome.trim())
-          }
-        }}
-      />
-      <button
-        type="button"
-        className="btn danger"
-        onClick={() => void onDelete(supplier.id)}
-      >
-        Remover
-      </button>
+      {editing ? (
+        <div className="supplier-edit-area">
+          <input className="editable-cell-input" value={nome} onChange={(event) => setNome(event.target.value)} aria-label="Razão social" />
+          <button type="button" className="supplier-menu-action" onClick={() => void saveEdit()}>Salvar</button>
+          <button type="button" className="supplier-menu-action" onClick={() => { setNome(supplier.nome); setEditing(false) }}>Cancelar</button>
+        </div>
+      ) : <span className="supplier-name">{supplier.nome}</span>}
+      <div className="supplier-row-menu">
+        <button type="button" className="supplier-more-btn" aria-label="Ações do fornecedor" onClick={() => setMenuOpen((v) => !v)}>⋯</button>
+        {menuOpen && <div className="supplier-action-menu">
+          <button type="button" onClick={() => { setEditing(true); setMenuOpen(false) }}>Editar</button>
+          <button type="button" className="danger-text" onClick={() => { setMenuOpen(false); void onDelete(supplier.id) }}>Remover</button>
+        </div>}
+      </div>
     </div>
   )
 }
