@@ -28,6 +28,7 @@ import {
   deleteManagedUser,
   fetchManagedUsers,
   resetManagedUserPassword,
+  updateManagedUsername,
   type ManagedUser,
 } from './adminUsers'
 
@@ -72,8 +73,8 @@ export default function App() {
   useEffect(() => {
     if (!selectionMenuOpen) return
     const close = (event: MouseEvent) => { if (selectionMenuRef.current && !selectionMenuRef.current.contains(event.target as Node)) setSelectionMenuOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    document.addEventListener('pointerdown', close, true)
+    return () => document.removeEventListener('pointerdown', close, true)
   }, [selectionMenuOpen])
 
   useEffect(() => {
@@ -761,20 +762,6 @@ export default function App() {
               <h2>Notas fiscais cadastradas:</h2>
             </div>
             <div className="list-tools">
-              <div className="filter-wrap">
-                <label htmlFor="missing-filter">Critério de preenchimento</label>
-                <select
-                  id="missing-filter"
-                  value={missingFilter}
-                  onChange={(event) => setMissingFilter(event.target.value as typeof missingFilter)}
-                >
-                  <option>Todos os registros</option>
-                  <option>Pendências de preenchimento</option>
-                  <option>Data de envio pendente</option>
-                  <option>Fornecedor não identificado</option>
-                  <option>Valor não informado</option>
-                </select>
-              </div>
               <div className="list-search-actions">
                 <div className="search-wrap">
                   <span>⌕</span>
@@ -1752,6 +1739,9 @@ function UserManagement({
   const [newPassword, setNewPassword] = useState('')
   const [resetOpen, setResetOpen] = useState<string | null>(null)
   const [resetValues, setResetValues] = useState<Record<string, string>>({})
+  const [userMenuOpen, setUserMenuOpen] = useState<string | null>(null)
+  const [editUsernameOpen, setEditUsernameOpen] = useState<string | null>(null)
+  const [editUsernameValues, setEditUsernameValues] = useState<Record<string, string>>({})
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
@@ -1913,57 +1903,37 @@ function UserManagement({
               </div>
 
               <div className="user-actions">
-                {resetOpen === user.id ? (
+                {editUsernameOpen === user.id ? (
                   <div className="user-reset">
-                    <input
-                      type="password"
-                      value={resetValues[user.id] ?? ''}
-                      onChange={(event) => setResetValues((current) => ({
-                        ...current,
-                        [user.id]: event.target.value,
-                      }))}
-                      placeholder="Nova senha"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      className="btn secondary"
-                      disabled={busy || !(resetValues[user.id] ?? '')}
-                      onClick={() => void handleReset(user)}
-                    >
-                      Salvar
-                    </button>
-                    <button
-                      className="btn ghost"
-                      disabled={busy}
-                      onClick={() => {
-                        setResetOpen(null)
-                        setResetValues((current) => ({ ...current, [user.id]: '' }))
-                      }}
-                    >
-                      Cancelar
-                    </button>
+                    <input value={editUsernameValues[user.id] ?? user.username} onChange={(event) => setEditUsernameValues((current) => ({ ...current, [user.id]: event.target.value }))} placeholder="Nome de usuário" />
+                    <button className="btn secondary" disabled={busy} onClick={async () => {
+                      const value = (editUsernameValues[user.id] ?? user.username).trim().toLowerCase()
+                      if (!/^[\p{L}\p{N}._-]{3,30}$/u.test(value)) { setMessage('Informe um usuário válido.'); return }
+                      setBusy(true); setMessage(null)
+                      try { await updateManagedUsername(user.id, value); setEditUsernameOpen(null); setEditUsernameValues((current) => { const next={...current}; delete next[user.id]; return next }); await loadUsers(); setMessage('Nome de usuário atualizado.') }
+                      catch (cause: unknown) { setMessage(cause instanceof Error ? cause.message : 'Não foi possível editar o usuário.') }
+                      finally { setBusy(false) }
+                    }}>Salvar</button>
+                    <button className="btn ghost" disabled={busy} onClick={() => setEditUsernameOpen(null)}>Cancelar</button>
+                  </div>
+                ) : resetOpen === user.id ? (
+                  <div className="user-reset">
+                    <input type="password" value={resetValues[user.id] ?? ''} onChange={(event) => setResetValues((current) => ({ ...current, [user.id]: event.target.value }))} placeholder="Nova senha" autoComplete="new-password" />
+                    <button className="btn secondary" disabled={busy || !(resetValues[user.id] ?? '')} onClick={() => void handleReset(user)}>Salvar</button>
+                    <button className="btn ghost" disabled={busy} onClick={() => { setResetOpen(null); setResetValues((current) => ({ ...current, [user.id]: '' })) }}>Cancelar</button>
                   </div>
                 ) : (
-                  <button
-                    className="btn secondary"
-                    disabled={busy}
-                    onClick={() => {
-                      setResetOpen(user.id)
-                      setMessage(null)
-                    }}
-                  >
-                    Redefinir senha
-                  </button>
+                  <div className="user-row-menu">
+                    <button type="button" className="supplier-more-btn" aria-label={`Ações de ${user.username}`} onClick={() => setUserMenuOpen((current) => current === user.id ? null : user.id)}>⋯</button>
+                    {userMenuOpen === user.id && <div className="supplier-action-menu user-action-menu">
+                      <button type="button" onClick={() => { setEditUsernameValues((current) => ({ ...current, [user.id]: user.username })); setEditUsernameOpen(user.id); setUserMenuOpen(null); setMessage(null) }}>Editar nome de usuário</button>
+                      <button type="button" onClick={() => { setResetOpen(user.id); setUserMenuOpen(null); setMessage(null) }}>Redefinir senha</button>
+                      <button type="button" className="danger-text" disabled={busy || user.id === currentUserId || user.role === 'admin'} onClick={() => { setUserMenuOpen(null); void handleDelete(user) }}>Remover</button>
+                    </div>}
+                  </div>
                 )}
-
-                <button
-                  className="btn danger"
-                  disabled={busy || user.id === currentUserId || user.role === 'admin'}
-                  onClick={() => void handleDelete(user)}
-                >
-                  Remover
-                </button>
               </div>
+div>
             </div>
           ))}
 
