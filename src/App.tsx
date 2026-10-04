@@ -990,7 +990,7 @@ function DashboardModal({
   const [showAllSuppliers, setShowAllSuppliers] = useState(false)
 
   const totalSalesNotes = notes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda').length
-  const totalRemittanceNotes = notes.filter((note) => (note.naturezaOperacao ?? '').trim().toLocaleLowerCase('pt-BR').startsWith('remessa')).length
+  const totalRepairReturns = notes.filter((note) => note.naturezaOperacao === 'Retorno de conserto').length
 
   const periodStart = useMemo(() => {
     if (period === 'all') return null
@@ -1137,9 +1137,9 @@ function DashboardModal({
             <small>Natureza: Venda</small>
           </div>
           <div className="dashboard-main-metric">
-            <span>Total de NFs de remessa</span>
-            <strong>{totalRemittanceNotes}</strong>
-            <small>Natureza: Remessa</small>
+            <span>Total de NFs de retorno de conserto</span>
+            <strong>{totalRepairReturns}</strong>
+            <small>Natureza: Retorno de conserto</small>
           </div>
         </div>
        <div className="dashboard-chart-area">
