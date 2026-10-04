@@ -992,14 +992,6 @@ function DashboardModal({
   const totalSalesNotes = notes.filter((note) => (note.naturezaOperacao ?? 'Venda') === 'Venda').length
   const totalRemittanceNotes = notes.filter((note) => (note.naturezaOperacao ?? '').trim().toLocaleLowerCase('pt-BR').startsWith('remessa')).length
 
-  const periodLabel = {
-    '6m': 'Últimos 6 meses',
-    '12m': 'Últimos 12 meses',
-    currentYear: 'Este ano',
-    previousYear: 'Ano anterior',
-    all: 'Todo o histórico',
-  }[period]
-
   const periodStart = useMemo(() => {
     if (period === 'all') return null
 
