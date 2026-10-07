@@ -1632,9 +1632,7 @@ function EditableNoteRow({
           onChange={(event) => void onSave({ ...note, naturezaOperacao: event.target.value })}
         >
           <option>Venda</option>
-          <option>Remessa</option>
           <option>Retorno de conserto</option>
-          <option>Brinde / bonificação / doação</option>
         </select>
       </td>
       <td><code>{note.chaveAcesso}</code></td>
