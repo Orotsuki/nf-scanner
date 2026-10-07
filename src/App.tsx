@@ -445,6 +445,26 @@ export default function App() {
     XLSX.writeFile(workbook, `NFs_selecionadas_${stamp}.xlsx`)
   }
 
+  async function deleteSelectedNotes(): Promise<void> {
+    const ids = [...selectedNoteIds]
+    if (!ids.length) return
+    const confirmed = window.confirm(`Excluir ${ids.length} NF${ids.length === 1 ? '' : 's'} selecionada${ids.length === 1 ? '' : 's'}? Esta ação não pode ser desfeita.`)
+    if (!confirmed) return
+
+    try {
+      if (session && isSupabaseConfigured) {
+        await Promise.all(ids.map((id) => deleteCloudNote(id)))
+      }
+      setNotes((current) => current.filter((note) => !selectedNoteIds.has(note.id)))
+      setSelectedNoteIds(new Set())
+      lastSelectedNoteId.current = null
+      setToast({ type: 'success', text: ids.length + ' NF' + (ids.length === 1 ? '' : 's') + ' excluída' + (ids.length === 1 ? '' : 's') + '.' })
+    } catch {
+      setSyncStatus('offline')
+      setToast({ type: 'error', text: 'Não foi possível excluir todas as NFs selecionadas.' })
+    }
+  }
+
   async function applyBulkSendDate(): Promise<void> {
     if (!bulkSendDate || !selectedNoteIds.size) return
 
@@ -831,6 +851,14 @@ export default function App() {
                     Exportar XLSX
                   </button>
                   <button
+                    className="btn danger bulk-delete-btn"
+                    disabled={selectedNoteIds.size === 0}
+                    onClick={() => void deleteSelectedNotes()}
+                    title="Excluir as NFs selecionadas"
+                  >
+                    Excluir selecionadas
+                  </button>
+                  <button
                     className="btn ghost"
                     disabled={selectedNoteIds.size === 0}
                     onClick={() => setSelectedNoteIds(new Set())}
@@ -863,7 +891,6 @@ export default function App() {
                   <th>Data de envio</th>
                   <th>Natureza da operação</th>
                   <th>Chave de acesso</th>
-                  <th aria-label="Ações" />
                 </tr>
               </thead>
               <tbody>
@@ -875,12 +902,11 @@ export default function App() {
                     selected={selectedNoteIds.has(note.id)}
                     onSelect={(shiftKey) => toggleNoteSelection(note.id, shiftKey)}
                     onSave={persistNote}
-                    onDelete={removeNote}
                   />
                 ))}
                 {!filteredNotes.length && (
                   <tr>
-                    <td colSpan={9} className="empty-row">
+                    <td colSpan={8} className="empty-row">
                       {notes.length ? 'Nenhum registro encontrado para a pesquisa.' : 'Nenhuma NF foi cadastrada ainda.'}
                     </td>
                   </tr>
@@ -1612,9 +1638,6 @@ function EditableNoteRow({
         </select>
       </td>
       <td><code>{note.chaveAcesso}</code></td>
-      <td className="action-cell">
-        <button className="delete-btn" onClick={() => void onDelete(note.id)} aria-label={`Excluir NF ${note.numeroNF}`}>×</button>
-      </td>
     </tr>
   )
 }
