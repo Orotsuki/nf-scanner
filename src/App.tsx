@@ -1472,7 +1472,6 @@ function SupplierManagement({
 function SupplierRow({
   supplier,
   onSave,
-  onDelete,
 }: {
   supplier: { id: string; cnpj: string; nome: string }
   onSave: (cnpj: string, nome: string) => Promise<void>
