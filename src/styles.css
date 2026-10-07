@@ -2692,3 +2692,17 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
     justify-content: space-between;
   }
 }
+
+.list-fixed-toolbar .bulk-toolbar.is-disabled {
+  opacity: .48;
+}
+.list-fixed-toolbar .bulk-toolbar.is-disabled .bulk-selected-count {
+  color: #91a6ba;
+}
+.list-fixed-toolbar .bulk-toolbar .btn:disabled,
+.list-fixed-toolbar .bulk-toolbar input:disabled {
+  cursor: not-allowed;
+}
+.list-fixed-toolbar .bulk-toolbar input:disabled {
+  opacity: .65;
+}
