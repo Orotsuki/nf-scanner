@@ -781,69 +781,64 @@ export default function App() {
         )}
 
         <section className="list-panel">
-          <div className="section-heading compact">
-            <div>
-              <h2>Notas fiscais cadastradas:</h2>
-            </div>
-            <div className="list-tools">
-              <div className="list-search-actions">
-                <div className="search-wrap">
-                  <span>⌕</span>
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
-                  />
-                </div>
-                <button
-                  type="button"
-                  className={`refresh-btn ${refreshing ? 'is-refreshing' : ''}`}
-                  onClick={handleRefresh}
-                  aria-label="Atualizar notas"
-                  title="Atualizar"
-                >
-                  <span className="refresh-icon">↻</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {selectedNoteIds.size > 0 && (
-            <div className="bulk-toolbar">
-              <div>
-                <strong>{selectedNoteIds.size}</strong> NF{selectedNoteIds.size === 1 ? '' : 's'} selecionada{selectedNoteIds.size === 1 ? '' : 's'}
-              </div>
-              <div className="bulk-actions">
-                <label htmlFor="bulk-send-date">Data de envio</label>
+          <div className="list-fixed-toolbar">
+            <div className="list-search-actions">
+              <div className="search-wrap">
+                <span>⌕</span>
                 <input
-                  id="bulk-send-date"
-                  type="date"
-                  value={bulkSendDate}
-                  onChange={(event) => setBulkSendDate(event.target.value)}
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Pesquisar NF, CNPJ, fornecedor ou chave"
                 />
-                <button
-                  className="btn primary"
-                  disabled={!bulkSendDate}
-                  onClick={() => void applyBulkSendDate()}
-                >
-                  Aplicar data
-                </button>
-                <button
-                  className="btn secondary export-xlsx-btn"
-                  onClick={exportSelectedNotesToXlsx}
-                  title="Exportar as NFs selecionadas para Excel"
-                >
-                  Exportar XLSX
-                </button>
-                <button
-                  className="btn ghost"
-                  onClick={() => setSelectedNoteIds(new Set())}
-                >
-                  Cancelar
-                </button>
               </div>
+              <button
+                type="button"
+                className={`refresh-btn ${refreshing ? 'is-refreshing' : ''}`}
+                onClick={handleRefresh}
+                aria-label="Atualizar notas"
+                title="Atualizar"
+              >
+                <span className="refresh-icon">↻</span>
+              </button>
             </div>
-          )}
+
+            {selectedNoteIds.size > 0 && (
+              <div className="bulk-toolbar">
+                <div className="bulk-selected-count">
+                  <strong>{selectedNoteIds.size}</strong> NF{selectedNoteIds.size === 1 ? '' : 's'} selecionada{selectedNoteIds.size === 1 ? '' : 's'}
+                </div>
+                <div className="bulk-actions">
+                  <label htmlFor="bulk-send-date">Data de envio</label>
+                  <input
+                    id="bulk-send-date"
+                    type="date"
+                    value={bulkSendDate}
+                    onChange={(event) => setBulkSendDate(event.target.value)}
+                  />
+                  <button
+                    className="btn primary"
+                    disabled={!bulkSendDate}
+                    onClick={() => void applyBulkSendDate()}
+                  >
+                    Aplicar data
+                  </button>
+                  <button
+                    className="btn secondary export-xlsx-btn"
+                    onClick={exportSelectedNotesToXlsx}
+                    title="Exportar as NFs selecionadas para Excel"
+                  >
+                    Exportar XLSX
+                  </button>
+                  <button
+                    className="btn ghost"
+                    onClick={() => setSelectedNoteIds(new Set())}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="table-wrap">
             <table>
