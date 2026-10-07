@@ -1647,7 +1647,7 @@ function AuthScreen() {
       return
     }
 
-    if (password.length < 6 || password.length > 72) {
+    if (password.length < 12 || password.length > 72) {
       setMessage('A senha deve ter entre 6 e 72 caracteres.')
       return
     }
