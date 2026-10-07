@@ -525,22 +525,6 @@ export default function App() {
   }
 
 
-  async function removeNote(id: string) {
-    const note = notes.find((item) => item.id === id)
-    if (!note) return
-
-    if (session && isSupabaseConfigured) {
-      try {
-        await deleteCloudNote(id)
-      } catch {
-        setSyncStatus('offline')
-        setToast({ type: 'error', text: 'Não foi possível excluir a nota da nuvem.' })
-        return
-      }
-    }
-
-    setNotes((current) => current.filter((item) => item.id !== id))
-  }
 
   async function handleSignOut() {
     try {
@@ -1549,7 +1533,6 @@ function EditableNoteRow({
   selected: boolean
   onSelect: (shiftKey: boolean) => void
   onSave: (note: NotaFiscal) => Promise<void>
-  onDelete: (id: string) => Promise<void>
 }) {
   const [fornecedor, setFornecedor] = useState(note.fornecedor)
   const [valor, setValor] = useState(note.valor == null ? '' : formatMoney(note.valor))
