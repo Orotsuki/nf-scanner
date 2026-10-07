@@ -1337,10 +1337,12 @@ function SupplierManagement({
   onClose,
   suppliers,
   onSave,
+  onDelete,
 }: {
   onClose: () => void
   suppliers: Array<{ id: string; cnpj: string; nome: string }>
   onSave: (cnpj: string, nome: string) => Promise<void>
+  onDelete: (id: string) => Promise<void>
 }) {
   const [supplierRows, setSupplierRows] = useState(suppliers)
   const [addOpen, setAddOpen] = useState(false)
