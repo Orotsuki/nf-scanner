@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import * as XLSX from 'xlsx'
 import type { Session } from '@supabase/supabase-js'
 import Scanner from './Scanner'
 import { explainNFeError, parseNFe } from './nfe'
@@ -411,6 +412,39 @@ export default function App() {
     window.setTimeout(() => setRefreshing(false), 850)
   }
 
+  function exportSelectedNotesToXlsx(): void {
+    const selectedNotes = notes.filter((note) => selectedNoteIds.has(note.id))
+    if (!selectedNotes.length) return
+
+    const rows = selectedNotes.map((note) => ({
+      'Número da NF-e': note.numeroNF,
+      'CNPJ do emitente': note.cnpjEmitente,
+      'Razão social': note.fornecedor,
+      'Valor': note.valor ?? null,
+      'Data de cadastro': note.dataCadastro ? new Date(note.dataCadastro).toLocaleString('pt-BR') : '',
+      'Data de envio': note.dataEnvio ? new Date(note.dataEnvio).toLocaleDateString('pt-BR') : '',
+      'Natureza da operação': note.naturezaOperacao ?? 'Venda',
+      'Chave de acesso': note.chaveAcesso,
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    worksheet['!cols'] = [
+      { wch: 16 }, { wch: 20 }, { wch: 42 }, { wch: 16 },
+      { wch: 21 }, { wch: 16 }, { wch: 24 }, { wch: 52 },
+    ]
+
+    for (let row = 2; row <= selectedNotes.length + 1; row += 1) {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: row - 1, c: 3 })]
+      if (cell) cell.z = 'R$ #,##0.00'
+    }
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Notas fiscais')
+    const now = new Date()
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`
+    XLSX.writeFile(workbook, `NFs_selecionadas_${stamp}.xlsx`)
+  }
+
   async function applyBulkSendDate(): Promise<void> {
     if (!bulkSendDate || !selectedNoteIds.size) return
 
@@ -793,6 +827,13 @@ export default function App() {
                   onClick={() => void applyBulkSendDate()}
                 >
                   Aplicar data
+                </button>
+                <button
+                  className="btn secondary export-xlsx-btn"
+                  onClick={exportSelectedNotesToXlsx}
+                  title="Exportar as NFs selecionadas para Excel"
+                >
+                  Exportar XLSX
                 </button>
                 <button
                   className="btn ghost"
