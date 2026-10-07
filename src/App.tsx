@@ -1337,7 +1337,6 @@ function SupplierManagement({
   onClose,
   suppliers,
   onSave,
-  onDelete,
 }: {
   onClose: () => void
   suppliers: Array<{ id: string; cnpj: string; nome: string }>
