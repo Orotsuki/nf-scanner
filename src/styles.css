@@ -2609,3 +2609,86 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
  .dashboard-bars-vertical { min-height:145px; }
  .dashboard-bar-track-vertical { height:105px; }
 }
+
+/* Barra única e fixa da lista, inspirada em barras de ferramentas de ERPs */
+.list-fixed-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 5px 8px;
+  margin: -1px -1px 8px;
+  border: 1px solid #214365;
+  border-radius: 10px;
+  background: #0d233a;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+.list-fixed-toolbar > .list-search-actions {
+  flex: 1 1 330px;
+  min-width: 240px;
+}
+.list-fixed-toolbar .search-wrap {
+  min-width: 0;
+  width: 100%;
+}
+.list-fixed-toolbar .refresh-btn {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 34px;
+}
+.list-fixed-toolbar .bulk-toolbar {
+  flex: 0 1 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e9f3ff;
+  box-shadow: none;
+  gap: 8px;
+}
+.list-fixed-toolbar .bulk-selected-count {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.list-fixed-toolbar .bulk-actions {
+  gap: 6px;
+}
+.list-fixed-toolbar .bulk-actions label {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.list-fixed-toolbar .bulk-actions input {
+  height: 32px;
+  padding: 0 7px;
+  border-radius: 7px;
+}
+.list-fixed-toolbar .bulk-actions .btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.list-fixed-toolbar .search-wrap input {
+  height: 34px;
+}
+@media (max-width: 760px) {
+  .list-fixed-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+    min-height: 0;
+    padding: 5px;
+  }
+  .list-fixed-toolbar > .list-search-actions {
+    flex: 1 1 100%;
+  }
+  .list-fixed-toolbar > .bulk-toolbar {
+    flex: 1 1 100%;
+    overflow-x: auto;
+    justify-content: space-between;
+  }
+}
