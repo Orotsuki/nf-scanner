@@ -802,8 +802,8 @@ export default function App() {
               </button>
             </div>
 
-            {selectedNoteIds.size > 0 && (
-              <div className="bulk-toolbar">
+            <div className={`bulk-toolbar ${selectedNoteIds.size === 0 ? 'is-disabled' : ''}`}>
+
                 <div className="bulk-selected-count">
                   <strong>{selectedNoteIds.size}</strong> NF{selectedNoteIds.size === 1 ? '' : 's'} selecionada{selectedNoteIds.size === 1 ? '' : 's'}
                 </div>
@@ -817,13 +817,14 @@ export default function App() {
                   />
                   <button
                     className="btn primary"
-                    disabled={!bulkSendDate}
+                    disabled={selectedNoteIds.size === 0 || !bulkSendDate}
                     onClick={() => void applyBulkSendDate()}
                   >
                     Aplicar data
                   </button>
                   <button
                     className="btn secondary export-xlsx-btn"
+                    disabled={selectedNoteIds.size === 0}
                     onClick={exportSelectedNotesToXlsx}
                     title="Exportar as NFs selecionadas para Excel"
                   >
@@ -831,13 +832,13 @@ export default function App() {
                   </button>
                   <button
                     className="btn ghost"
+                    disabled={selectedNoteIds.size === 0}
                     onClick={() => setSelectedNoteIds(new Set())}
                   >
                     Cancelar
                   </button>
                 </div>
               </div>
-            )}
           </div>
 
           <div className="table-wrap">
