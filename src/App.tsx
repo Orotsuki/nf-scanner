@@ -339,7 +339,9 @@ export default function App() {
     }
 
     setManualValue('')
-    setManualOpen(false)
+    // No desktop, mantém a entrada manual aberta para o próximo cadastro.
+    // Assim é possível lançar várias NFs em sequência sem reabrir o campo.
+    if (!isDesktopDevice()) setManualOpen(false)
 
     if ('vibrate' in navigator) navigator.vibrate?.(70)
     playBeep()
