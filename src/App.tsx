@@ -848,15 +848,11 @@ export default function App() {
 
                 <label htmlFor="manual-note-supplier">Razão social do emitente</label>
                 <input id="manual-note-supplier" value={manualNoteSupplier} onChange={(event) => setManualNoteSupplier(event.target.value)} placeholder="Preenchida automaticamente pelo CNPJ, se cadastrado" required />
+                <p className="manual-note-help">Se o CNPJ não estiver na base de fornecedores, informe a razão social manualmente.</p>
 
                 <label htmlFor="manual-note-value">Valor total (R$)</label>
                 <input id="manual-note-value" inputMode="decimal" value={manualNoteValue} onChange={(event) => setManualNoteValue(event.target.value)} placeholder="0,00" required />
 
-                <div className="manual-note-auto-fields">
-                  <div><span>Data de cadastro</span><strong>Automática ao salvar</strong></div>
-                  <div><span>Chave de acesso</span><strong>Não aplicável</strong></div>
-                </div>
-                <p className="manual-note-help">Se o CNPJ não estiver na base de fornecedores, informe a razão social manualmente.</p>
                 <div className="manual-note-actions">
                   <button className="btn ghost" type="button" onClick={() => setManualNoteOpen(false)}>Cancelar</button>
                   <button className="btn primary" type="submit" disabled={manualNoteSaving}>{manualNoteSaving ? 'Salvando…' : 'Cadastrar nota'}</button>
