@@ -48,6 +48,12 @@ export default function App() {
   const [scannerOpen, setScannerOpen] = useState(() => !isDesktopDevice())
   const [manualOpen, setManualOpen] = useState(() => isDesktopDevice())
   const [manualValue, setManualValue] = useState('')
+  const [manualNoteOpen, setManualNoteOpen] = useState(false)
+  const [manualNoteNumber, setManualNoteNumber] = useState('')
+  const [manualNoteCnpj, setManualNoteCnpj] = useState('')
+  const [manualNoteSupplier, setManualNoteSupplier] = useState('')
+  const [manualNoteValue, setManualNoteValue] = useState('')
+  const [manualNoteSaving, setManualNoteSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'warning' | 'error'; text: string } | null>(null)
   const [search, setSearch] = useState('')
   const [session, setSession] = useState<Session | null>(null)
@@ -346,6 +352,78 @@ export default function App() {
     if ('vibrate' in navigator) navigator.vibrate?.(70)
     playBeep()
   }, [notes, session, supplierMap])
+
+  async function lookupManualSupplier(cnpjValue: string): Promise<void> {
+    const cnpj = cnpjValue.replace(/\D/g, '')
+    if (cnpj.length !== 14) return
+
+    const localName = supplierMap[cnpj]
+    if (localName) {
+      setManualNoteSupplier(localName)
+      return
+    }
+
+    if (!session || !isSupabaseConfigured) return
+    try {
+      const supplier = await findSupplierByCnpj(cnpj)
+      if (supplier) setManualNoteSupplier(supplier.nome)
+    } catch {
+      // O usuário pode preencher a razão social manualmente se a consulta falhar.
+    }
+  }
+
+  async function addManualNote(): Promise<void> {
+    const numeroNF = manualNoteNumber.trim()
+    const cnpj = manualNoteCnpj.replace(/\D/g, '')
+    const fornecedor = manualNoteSupplier.trim()
+    const valor = parseMoney(manualNoteValue)
+
+    if (!numeroNF || cnpj.length !== 14 || !fornecedor || valor == null || valor < 0) {
+      setToast({ type: 'error', text: 'Preencha número, CNPJ válido, razão social e valor da nota.' })
+      return
+    }
+
+    if (notes.some((note) => note.chaveAcesso === 'Não aplicável' && note.numeroNF === numeroNF && note.cnpjEmitente === cnpj)) {
+      setToast({ type: 'warning', text: 'Já existe uma nota manual com esse número e CNPJ.' })
+      return
+    }
+
+    const note: NotaFiscal = {
+      id: crypto.randomUUID(),
+      numeroNF,
+      cnpjEmitente: cnpj,
+      fornecedor,
+      valor,
+      chaveAcesso: 'Não aplicável',
+      dataCadastro: new Date().toISOString(),
+      dataEnvio: null,
+      naturezaOperacao: 'Venda',
+      syncPending: true,
+    }
+
+    setManualNoteSaving(true)
+    setNotes((current) => [note, ...current])
+    setRecentNoteId(note.id)
+    setManualNoteOpen(false)
+    setManualNoteNumber('')
+    setManualNoteCnpj('')
+    setManualNoteSupplier('')
+    setManualNoteValue('')
+
+    if (session && isSupabaseConfigured) {
+      try {
+        await upsertCloudNote(note)
+        setNotes((current) => current.map((item) => item.id === note.id ? { ...item, syncPending: false } : item))
+        setSyncStatus('online')
+      } catch {
+        setSyncStatus('offline')
+        setToast({ type: 'warning', text: `Nota ${numeroNF} salva neste aparelho, mas não foi sincronizada ainda.` })
+      }
+    }
+
+    setManualNoteSaving(false)
+    setToast({ type: 'success', text: `Nota ${numeroNF} cadastrada manualmente.` })
+  }
 
   const filteredNotes = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -700,6 +778,17 @@ export default function App() {
                 >
                   Digitar chave de acesso
                 </button>
+                <button
+                  className="btn secondary"
+                  type="button"
+                  onClick={() => {
+                    setManualNoteOpen(true)
+                    setScannerOpen(false)
+                    setManualOpen(false)
+                  }}
+                >
+                  Adicionar NF manualmente
+                </button>
               </div>
             </div>
 
@@ -730,6 +819,49 @@ export default function App() {
             )}
           </div>
         </section>
+
+        {manualNoteOpen && (
+          <div className="modal-backdrop" onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setManualNoteOpen(false)
+          }}>
+            <div className="user-management manual-note-modal" role="dialog" aria-modal="true" aria-labelledby="manual-note-title" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="user-management-header">
+                <div>
+                  <h2 id="manual-note-title">Adicionar NF manualmente</h2>
+                  <p>Para NFS-e ou documentos sem chave de acesso.</p>
+                </div>
+                <button className="icon-btn modal-close" type="button" onClick={() => setManualNoteOpen(false)} aria-label="Fechar">×</button>
+              </div>
+              <form className="manual-note-form" onSubmit={(event) => { event.preventDefault(); void addManualNote() }}>
+                <label htmlFor="manual-note-number">Número da nota</label>
+                <input id="manual-note-number" value={manualNoteNumber} onChange={(event) => setManualNoteNumber(event.target.value)} placeholder="Ex.: 341" required />
+
+                <label htmlFor="manual-note-cnpj">CNPJ do emitente</label>
+                <input id="manual-note-cnpj" inputMode="numeric" value={manualNoteCnpj} onChange={(event) => {
+                  const value = event.target.value
+                  setManualNoteCnpj(value)
+                  if (value.replace(/\D/g, '').length === 14) void lookupManualSupplier(value)
+                }} onBlur={() => void lookupManualSupplier(manualNoteCnpj)} placeholder="00.000.000/0000-00" maxLength={18} required />
+
+                <label htmlFor="manual-note-supplier">Razão social do emitente</label>
+                <input id="manual-note-supplier" value={manualNoteSupplier} onChange={(event) => setManualNoteSupplier(event.target.value)} placeholder="Preenchida automaticamente pelo CNPJ, se cadastrado" required />
+
+                <label htmlFor="manual-note-value">Valor total (R$)</label>
+                <input id="manual-note-value" inputMode="decimal" value={manualNoteValue} onChange={(event) => setManualNoteValue(event.target.value)} placeholder="0,00" required />
+
+                <div className="manual-note-auto-fields">
+                  <div><span>Data de cadastro</span><strong>Automática ao salvar</strong></div>
+                  <div><span>Chave de acesso</span><strong>Não aplicável</strong></div>
+                </div>
+                <p className="manual-note-help">Se o CNPJ não estiver na base de fornecedores, informe a razão social manualmente.</p>
+                <div className="manual-note-actions">
+                  <button className="btn ghost" type="button" onClick={() => setManualNoteOpen(false)}>Cancelar</button>
+                  <button className="btn primary" type="submit" disabled={manualNoteSaving}>{manualNoteSaving ? 'Salvando…' : 'Cadastrar nota'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {recentNote && (
           <div className="recent-note-banner" role="status">
