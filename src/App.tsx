@@ -410,19 +410,22 @@ export default function App() {
     setManualNoteSupplier('')
     setManualNoteValue('')
 
+    let syncFailed = false
     if (session && isSupabaseConfigured) {
       try {
         await upsertCloudNote(note)
         setNotes((current) => current.map((item) => item.id === note.id ? { ...item, syncPending: false } : item))
         setSyncStatus('online')
       } catch {
+        syncFailed = true
         setSyncStatus('offline')
-        setToast({ type: 'warning', text: `Nota ${numeroNF} salva neste aparelho, mas não foi sincronizada ainda.` })
       }
     }
 
     setManualNoteSaving(false)
-    setToast({ type: 'success', text: `Nota ${numeroNF} cadastrada manualmente.` })
+    setToast(syncFailed
+      ? { type: 'warning', text: `Nota ${numeroNF} cadastrada neste aparelho, mas ainda não foi sincronizada.` }
+      : { type: 'success', text: `Nota ${numeroNF} cadastrada manualmente.` })
   }
 
   const filteredNotes = useMemo(() => {
