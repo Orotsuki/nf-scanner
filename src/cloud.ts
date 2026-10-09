@@ -134,7 +134,7 @@ export async function upsertCloudNote(note: NotaFiscal): Promise<void> {
         data_envio: note.dataEnvio,
         natureza_operacao: note.naturezaOperacao ?? 'Venda',
       },
-      { onConflict: 'user_id,chave_acesso' },
+      { onConflict: 'id' },
     )
 
   if (error) throw error
@@ -184,16 +184,18 @@ export async function mergeLocalNotesIntoCloud(localNotes: NotaFiscal[]): Promis
   if (!pendingNotes.length) return
 
   const remoteNotes = await fetchCloudNotes()
-  const remoteKeys = new Set(remoteNotes.map((note) => note.chaveAcesso))
+  const remoteIds = new Set(remoteNotes.map((note) => note.id))
+  const remoteKeys = new Set(remoteNotes.filter((note) => note.chaveAcesso !== 'Não aplicável').map((note) => note.chaveAcesso))
 
   for (const note of pendingNotes) {
     if (note.fornecedor.trim()) {
       await upsertSupplier(note.cnpjEmitente, note.fornecedor)
     }
 
-    if (!remoteKeys.has(note.chaveAcesso)) {
+    if (!remoteIds.has(note.id) && (note.chaveAcesso === 'Não aplicável' || !remoteKeys.has(note.chaveAcesso))) {
       await upsertCloudNote(note)
-      remoteKeys.add(note.chaveAcesso)
+      remoteIds.add(note.id)
+      if (note.chaveAcesso !== 'Não aplicável') remoteKeys.add(note.chaveAcesso)
     }
   }
 }
