@@ -18,12 +18,13 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: #f8fafc; }
+html, body, #root { width: 100%; max-width: 100%; }
+body { margin: 0; min-width: 320px; background: #f8fafc; overflow-x: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.48; }
 
-.app-shell { min-height: 100vh; }
+.app-shell { width: 100%; max-width: 100%; min-height: 100vh; overflow-x: clip; }
 .topbar {
   position: sticky;
   top: 0;
@@ -304,10 +305,11 @@ td code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   .content { padding: 16px 14px 40px; }
   .scanner-panel, .summary-card, .list-panel { border-radius: 15px; }
   .scanner-panel { padding: 14px; }
-  .section-heading { flex-direction: column; align-items: stretch; }
-  .section-heading .btn { width: 100%; }
-  .camera-actions { width: 100%; }
-  .camera-actions .btn { flex: 1 1 0; }
+  .section-heading { flex-direction: column; align-items: stretch; min-width: 0; }
+  .section-heading > div { min-width: 0; }
+  .section-heading .btn { width: 100%; min-width: 0; }
+  .camera-actions { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; min-width: 0; }
+  .camera-actions .btn { width: 100%; min-width: 0; white-space: normal; }
   .scan-actions { grid-template-columns: 1fr; }
   .manual-row { flex-direction: column; }
   .search-wrap { min-width: 0; width: 100%; }
