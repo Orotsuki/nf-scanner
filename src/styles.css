@@ -2734,3 +2734,8 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
   .manual-note-actions { flex-direction: column-reverse; }
   .manual-note-actions .btn { width: 100%; }
 }
+
+/* Keep the global actions menu above the sticky notes toolbar */
+.top-menu-wrap { z-index: 120; }
+.top-menu { z-index: 130; }
+.list-fixed-toolbar { z-index: 25; }
