@@ -2740,3 +2740,17 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .top-menu-wrap { position: relative; z-index: 150; }
 .top-menu { z-index: 160; }
 .list-fixed-toolbar { z-index: 25; }
+
+/* When the account menu opens, dim the page behind it so fixed list controls
+   never appear to run through the menu. */
+.top-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 145;
+  border: 0;
+  padding: 0;
+  background: rgba(2, 8, 18, .42);
+  cursor: default;
+}
+.top-menu-wrap { position: relative; z-index: 150; }
+.top-menu { z-index: 160; background: #0c1f34; }
