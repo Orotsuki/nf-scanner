@@ -501,8 +501,19 @@ export default function App() {
     if (!confirmed) return
 
     try {
+      const selectedNotes = notes.filter((note) => selectedNoteIds.has(note.id))
       if (session && isSupabaseConfigured) {
+        // Garante que fornecedores associados às NFs selecionadas permaneçam cadastrados
+        // independentemente da exclusão das notas.
+        for (const note of selectedNotes) {
+          if (note.fornecedor.trim() && note.cnpjEmitente.replace(/\D/g, '').length === 14) {
+            await upsertSupplier(note.cnpjEmitente, note.fornecedor)
+          }
+        }
         await Promise.all(ids.map((id) => deleteCloudNote(id)))
+        const suppliers = await fetchSuppliers()
+        setSupplierRecords(suppliers)
+        setSupplierMap(toSupplierMap(suppliers))
       }
       setNotes((current) => current.filter((note) => !selectedNoteIds.has(note.id)))
       setSelectedNoteIds(new Set())
