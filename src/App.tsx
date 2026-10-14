@@ -503,8 +503,7 @@ export default function App() {
     try {
       const selectedNotes = notes.filter((note) => selectedNoteIds.has(note.id))
       if (session && isSupabaseConfigured) {
-        // Exclui somente as notas fiscais e restaura os fornecedores associados depois da exclusão.
-        await Promise.all(ids.map((id) => deleteCloudNote(id)))
+        // Persiste os fornecedores antes de excluir notas, mantendo a base independente das NFs.
         for (const note of selectedNotes) {
           const cnpj = note.cnpjEmitente.replace(/\D/g, '')
           const nome = note.fornecedor.trim()
@@ -512,6 +511,7 @@ export default function App() {
             await upsertSupplier(cnpj, nome)
           }
         }
+        await Promise.all(ids.map((id) => deleteCloudNote(id)))
         const suppliers = await fetchSuppliers()
         setSupplierRecords(suppliers)
         setSupplierMap(toSupplierMap(suppliers))
@@ -675,6 +675,14 @@ export default function App() {
             </div>
           )}
         </div>
+        {topMenuOpen && (
+          <button
+            type="button"
+            className="top-menu-backdrop"
+            aria-label="Fechar menu"
+            onClick={() => setTopMenuOpen(false)}
+          />
+        )}
         <div className="top-actions">
           {session && (
             <div className="top-menu-wrap" ref={topMenuRef}>
