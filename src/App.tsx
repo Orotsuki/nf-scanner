@@ -430,6 +430,7 @@ export default function App() {
 
   const filteredNotes = useMemo(() => {
     const q = search.trim().toLowerCase()
+    const qKey = q.replace(/\s+/g, '')
 
     return notes.filter((note) => {
       if (!q) return true
@@ -439,7 +440,7 @@ export default function App() {
         note.cnpjEmitente.toLowerCase().includes(q) ||
         note.fornecedor.toLowerCase().includes(q) ||
         String(note.valor ?? '').includes(q) ||
-        note.chaveAcesso.includes(q)
+        note.chaveAcesso.toLowerCase().replace(/\s+/g, '').includes(qKey)
       )
     })
   }, [notes, search])
