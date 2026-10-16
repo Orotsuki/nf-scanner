@@ -373,6 +373,8 @@ export default function App() {
   }
 
   async function addManualNote(): Promise<void> {
+    if (manualNoteSaving) return
+
     const numeroNF = manualNoteNumber.trim()
     const cnpj = manualNoteCnpj.replace(/\D/g, '')
     const fornecedor = manualNoteSupplier.trim()
@@ -856,7 +858,16 @@ export default function App() {
                 </div>
                 <button className="icon-btn modal-close" type="button" onClick={() => setManualNoteOpen(false)} aria-label="Fechar">×</button>
               </div>
-              <form className="manual-note-form" onSubmit={(event) => { event.preventDefault(); void addManualNote() }}>
+              <form
+                className="manual-note-form"
+                onSubmit={(event) => { event.preventDefault(); void addManualNote() }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+                    event.preventDefault()
+                    void addManualNote()
+                  }
+                }}
+              >
                 <label htmlFor="manual-note-number">Número da nota</label>
                 <input id="manual-note-number" value={manualNoteNumber} onChange={(event) => setManualNoteNumber(event.target.value)} placeholder="Ex.: 341" required />
 
