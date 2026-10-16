@@ -868,7 +868,7 @@ export default function App() {
               <form
                 className="manual-note-form"
                 onSubmit={(event) => { event.preventDefault(); void addManualNote() }}
-              
+              >
                 <label htmlFor="manual-note-number">Número da nota</label>
                 <input onKeyDown={handleManualNoteEnter} id="manual-note-number" value={manualNoteNumber} onChange={(event) => setManualNoteNumber(event.target.value)} placeholder="Ex.: 341" required />
 
