@@ -372,6 +372,13 @@ export default function App() {
     }
   }
 
+  function handleManualNoteEnter(event: React.KeyboardEvent<HTMLInputElement>): void {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    event.stopPropagation()
+    void addManualNote()
+  }
+
   async function addManualNote(): Promise<void> {
     if (manualNoteSaving) return
 
@@ -861,29 +868,23 @@ export default function App() {
               <form
                 className="manual-note-form"
                 onSubmit={(event) => { event.preventDefault(); void addManualNote() }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
-                    event.preventDefault()
-                    void addManualNote()
-                  }
-                }}
-              >
+              
                 <label htmlFor="manual-note-number">Número da nota</label>
-                <input id="manual-note-number" value={manualNoteNumber} onChange={(event) => setManualNoteNumber(event.target.value)} placeholder="Ex.: 341" required />
+                <input onKeyDown={handleManualNoteEnter} id="manual-note-number" value={manualNoteNumber} onChange={(event) => setManualNoteNumber(event.target.value)} placeholder="Ex.: 341" required />
 
                 <label htmlFor="manual-note-cnpj">CNPJ do emitente</label>
-                <input id="manual-note-cnpj" inputMode="numeric" value={manualNoteCnpj} onChange={(event) => {
+                <input onKeyDown={handleManualNoteEnter} id="manual-note-cnpj" inputMode="numeric" value={manualNoteCnpj} onChange={(event) => {
                   const value = event.target.value
                   setManualNoteCnpj(value)
                   if (value.replace(/\D/g, '').length === 14) void lookupManualSupplier(value)
                 }} onBlur={() => void lookupManualSupplier(manualNoteCnpj)} placeholder="00.000.000/0000-00" maxLength={18} required />
 
                 <label htmlFor="manual-note-supplier">Razão social do emitente</label>
-                <input id="manual-note-supplier" value={manualNoteSupplier} onChange={(event) => setManualNoteSupplier(event.target.value)} placeholder="Preenchida automaticamente pelo CNPJ, se cadastrado" required />
+                <input onKeyDown={handleManualNoteEnter} id="manual-note-supplier" value={manualNoteSupplier} onChange={(event) => setManualNoteSupplier(event.target.value)} placeholder="Preenchida automaticamente pelo CNPJ, se cadastrado" required />
                 <p className="manual-note-help">Se o CNPJ não estiver na base de fornecedores, informe a razão social manualmente.</p>
 
                 <label htmlFor="manual-note-value">Valor total (R$)</label>
-                <input id="manual-note-value" inputMode="decimal" value={manualNoteValue} onChange={(event) => setManualNoteValue(event.target.value)} placeholder="0,00" required />
+                <input onKeyDown={handleManualNoteEnter} id="manual-note-value" inputMode="decimal" value={manualNoteValue} onChange={(event) => setManualNoteValue(event.target.value)} placeholder="0,00" required />
 
                 <div className="manual-note-actions">
                   <button className="btn ghost" type="button" onClick={() => setManualNoteOpen(false)}>Cancelar</button>
