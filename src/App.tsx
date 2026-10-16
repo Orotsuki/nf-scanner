@@ -43,6 +43,93 @@ function isDesktopDevice(): boolean {
   )
 }
 
+function xmlEscape(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
+}
+
+function makeStoredZip(files: Array<{ name: string; content: string }>): Blob {
+  const encoder = new TextEncoder()
+  const entries: Array<{ name: Uint8Array; data: Uint8Array; crc: number; offset: number }> = []
+  const chunks: Uint8Array[] = []
+  let offset = 0
+  const crcTable = new Uint32Array(256)
+  for (let n = 0; n < 256; n += 1) {
+    let c = n
+    for (let k = 0; k < 8; k += 1) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1)
+    crcTable[n] = c >>> 0
+  }
+  const crc32 = (data: Uint8Array): number => {
+    let crc = 0xffffffff
+    for (const byte of data) crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8)
+    return (crc ^ 0xffffffff) >>> 0
+  }
+  const write16 = (view: DataView, at: number, value: number) => view.setUint16(at, value, true)
+  const write32 = (view: DataView, at: number, value: number) => view.setUint32(at, value >>> 0, true)
+  for (const file of files) {
+    const name = encoder.encode(file.name)
+    const data = encoder.encode(file.content)
+    const crc = crc32(data)
+    const local = new Uint8Array(30 + name.length)
+    const localView = new DataView(local.buffer)
+    write32(localView, 0, 0x04034b50); write16(localView, 4, 20); write16(localView, 6, 0x0800)
+    write16(localView, 8, 0); write16(localView, 10, 0); write16(localView, 12, 0)
+    write32(localView, 14, crc); write32(localView, 18, data.length); write32(localView, 22, data.length)
+    write16(localView, 26, name.length); write16(localView, 28, 0); local.set(name, 30)
+    entries.push({ name, data, crc, offset })
+    chunks.push(local, data)
+    offset += local.length + data.length
+  }
+  const centralStart = offset
+  for (const entry of entries) {
+    const central = new Uint8Array(46 + entry.name.length)
+    const view = new DataView(central.buffer)
+    write32(view, 0, 0x02014b50); write16(view, 4, 20); write16(view, 6, 20); write16(view, 8, 0x0800)
+    write16(view, 10, 0); write16(view, 12, 0); write16(view, 14, 0); write32(view, 16, entry.crc)
+    write32(view, 20, entry.data.length); write32(view, 24, entry.data.length); write16(view, 28, entry.name.length)
+    write16(view, 30, 0); write16(view, 32, 0); write16(view, 34, 0); write16(view, 36, 0)
+    write32(view, 38, 0); write32(view, 42, entry.offset); central.set(entry.name, 46)
+    chunks.push(central); offset += central.length
+  }
+  const centralSize = offset - centralStart
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  write32(endView, 0, 0x06054b50); write16(endView, 4, 0); write16(endView, 6, 0)
+  write16(endView, 8, entries.length); write16(endView, 10, entries.length)
+  write32(endView, 12, centralSize); write32(endView, 16, centralStart); write16(endView, 20, 0)
+  chunks.push(end)
+  return new Blob(chunks, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+}
+
+function exportNotesToXlsx(notes: NotaFiscal[]): void {
+  if (!notes.length) return
+  const headers = ['Número da NF', 'CNPJ do emitente', 'Razão social do emitente', 'Valor total (R$)', 'Chave de acesso', 'Data de cadastro', 'Data de envio', 'Natureza da operação']
+  const cell = (value: string | number, row: number, col: number): string => {
+    const ref = String.fromCharCode(65 + col) + row
+    if (typeof value === 'number' && Number.isFinite(value)) return '<c r="' + ref + '" t="n"><v>' + value + '</v></c>'
+    return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + xmlEscape(String(value)) + '</t></is></c>'
+  }
+  const rows: Array<Array<string | number>> = [headers, ...notes.map((note) => [
+    note.numeroNF, note.cnpjEmitente, note.fornecedor, note.valor == null ? '' : note.valor, note.chaveAcesso,
+    note.dataCadastro ? new Date(note.dataCadastro).toLocaleDateString('pt-BR') : '',
+    note.dataEnvio ? new Date(note.dataEnvio + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+    note.naturezaOperacao,
+  ])]
+  const sheetRows = rows.map((row, rowIndex) => '<row r="' + (rowIndex + 1) + '">' + row.map((value, colIndex) => cell(value, rowIndex + 1, colIndex)).join('') + '</row>').join('')
+  const sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' + sheetRows + '</sheetData><autoFilter ref="A1:H' + rows.length + '"/></worksheet>'
+  const files = [
+    { name: '[Content_Types].xml', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>' },
+    { name: '_rels/.rels', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+    { name: 'xl/workbook.xml', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Notas fiscais" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+    { name: 'xl/_rels/workbook.xml.rels', content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>' },
+    { name: 'xl/worksheets/sheet1.xml', content: sheet },
+  ]
+  const blob = makeStoredZip(files)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'notas-fiscais-selecionadas-' + new Date().toISOString().slice(0, 10) + '.xlsx'
+  document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url)
+}
 export default function App() {
   const [notes, setNotes] = useState<NotaFiscal[]>(() => loadNotes())
   const [scannerOpen, setScannerOpen] = useState(() => !isDesktopDevice())
@@ -957,6 +1044,18 @@ export default function App() {
                     onClick={() => void applyBulkSendDate()}
                   >
                     Aplicar data
+                  </button>
+                  <button
+                    className="btn primary"
+                    disabled={selectedNoteIds.size === 0}
+                    onClick={() => {
+                      const selectedNotes = notes.filter((note) => selectedNoteIds.has(note.id))
+                      exportNotesToXlsx(selectedNotes)
+                      setToast({ type: 'success', text: selectedNotes.length + ' NF' + (selectedNotes.length === 1 ? '' : 's') + ' exportada' + (selectedNotes.length === 1 ? '' : 's') + ' para XLSX.' })
+                    }
+                    title="Exportar as NFs selecionadas para Excel"
+                  >
+                    Exportar XLSX
                   </button>
                   <button
                     className="btn danger bulk-delete-btn"
