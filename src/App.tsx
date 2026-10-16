@@ -97,7 +97,8 @@ function makeStoredZip(files: Array<{ name: string; content: string }>): Blob {
   write16(endView, 8, entries.length); write16(endView, 10, entries.length)
   write32(endView, 12, centralSize); write32(endView, 16, centralStart); write16(endView, 20, 0)
   chunks.push(end)
-  return new Blob(chunks, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  const parts: BlobPart[] = chunks.map((chunk) => chunk.slice().buffer as ArrayBuffer)
+  return new Blob(parts, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 }
 
 function exportNotesToXlsx(notes: NotaFiscal[]): void {
