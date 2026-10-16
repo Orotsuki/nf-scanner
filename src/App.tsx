@@ -1052,7 +1052,7 @@ export default function App() {
                       const selectedNotes = notes.filter((note) => selectedNoteIds.has(note.id))
                       exportNotesToXlsx(selectedNotes)
                       setToast({ type: 'success', text: selectedNotes.length + ' NF' + (selectedNotes.length === 1 ? '' : 's') + ' exportada' + (selectedNotes.length === 1 ? '' : 's') + ' para XLSX.' })
-                    }
+                    }}
                     title="Exportar as NFs selecionadas para Excel"
                   >
                     Exportar XLSX
