@@ -373,10 +373,10 @@ export default function App() {
   }
 
   function handleManualNoteEnter(event: React.KeyboardEvent<HTMLInputElement>): void {
-    if (event.key !== 'Enter') return
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return
     event.preventDefault()
     event.stopPropagation()
-    void addManualNote()
+    event.currentTarget.form?.requestSubmit()
   }
 
   async function addManualNote(): Promise<void> {
