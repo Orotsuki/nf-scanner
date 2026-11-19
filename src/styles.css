@@ -2741,6 +2741,18 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .top-menu { z-index: 160; }
 .list-fixed-toolbar { top: 70px; z-index: 25; }
 
+/* Mantém o cabeçalho das colunas visível durante a rolagem da lista */
+.dark-theme .table-wrap thead th {
+  position: sticky;
+  top: 118px;
+  z-index: 20;
+  background: #0d233a;
+}
+
+@media (max-width: 720px) {
+  .dark-theme .table-wrap thead th { top: 114px; }
+}
+
 @media (max-width: 720px) {
   .list-fixed-toolbar { top: 66px; }
 }
