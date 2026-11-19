@@ -271,7 +271,7 @@ h2 { font-size: 19px; }
 .search-wrap { display: flex; align-items: center; gap: 8px; min-width: min(380px, 100%); color: #64748b; }
 .search-wrap span { margin-left: 10px; font-size: 18px; }
 .search-wrap input { padding-left: 2px; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+.table-wrap { overflow: visible; border: 1px solid var(--line); border-radius: 14px; }
 .table-wrap tbody td { padding-top: 5px; padding-bottom: 5px; }
 .table-wrap tbody .editable-cell-input, .table-wrap tbody .editable-cell-select { height: 32px; }
 table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -2741,13 +2741,19 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .top-menu { z-index: 160; }
 .list-fixed-toolbar { top: 70px; z-index: 25; }
 
-/* O cabeçalho acompanha a rolagem dentro do contêiner da tabela.
-   A barra de pesquisa já ocupa a faixa superior separadamente. */
+/* O cabeçalho acompanha a rolagem da página, abaixo da barra de ações.
+   .table-wrap não pode criar um scroll container vertical/horizontal aqui. */
 .dark-theme .table-wrap thead th {
   position: sticky;
-  top: 0;
-  z-index: 20;
+  top: 118px;
+  z-index: 30;
   background: #0d233a;
+}
+
+/* Em telas estreitas, preserva a rolagem horizontal da tabela. */
+@media (max-width: 760px) {
+  .table-wrap { overflow-x: auto; }
+  .dark-theme .table-wrap thead th { top: 114px; }
 }
 
 @media (max-width: 720px) {
