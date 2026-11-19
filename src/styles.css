@@ -2810,3 +2810,59 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 }
 .top-menu-wrap { position: relative; z-index: 150; }
 .top-menu { z-index: 160; background: #0c1f34; }
+
+
+/* Ajuste fino do cabeçalho da tabela: checkbox visível e altura reduzida */
+.dark-theme .table-wrap thead th {
+  padding: 7px 10px !important;
+  line-height: 1.15;
+  vertical-align: middle;
+}
+
+.dark-theme .table-wrap thead th.check-cell {
+  width: 42px;
+  min-width: 42px;
+  padding-left: 10px !important;
+  padding-right: 6px !important;
+}
+
+.dark-theme .table-wrap thead th.check-cell .selection-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 24px;
+  min-height: 18px;
+  overflow: visible;
+}
+
+.dark-theme .table-wrap thead th.check-cell .selection-control input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: inline-grid !important;
+  flex: 0 0 14px;
+  width: 14px !important;
+  min-width: 14px;
+  height: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #7894ad !important;
+  border-radius: 3px;
+  background: #0b2035 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.dark-theme .table-wrap thead th.check-cell .selection-control input[type="checkbox"]:checked,
+.dark-theme .table-wrap thead th.check-cell .selection-control input[type="checkbox"]:indeterminate {
+  background: #1687d9 !important;
+  border-color: #42a5f5 !important;
+}
+
+.dark-theme .table-wrap thead th.check-cell .selection-control input[type="checkbox"]:checked::before {
+  content: "";
+  width: 4px;
+  height: 7px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
