@@ -2741,8 +2741,27 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .top-menu { z-index: 160; }
 .list-fixed-toolbar { top: 70px; z-index: 25; }
 
-/* O cabeçalho acompanha a rolagem da página, abaixo da barra de ações.
-   .table-wrap não pode criar um scroll container vertical/horizontal aqui. */
+/* Desktop: permite que o cabeçalho da tabela acompanhe a rolagem da página.
+   overflow: clip preserva o sticky, limita a tabela ao painel e respeita os cantos. */
+.table-wrap {
+  overflow-x: clip;
+  border-radius: 14px;
+}
+.table-wrap table {
+  width: 100%;
+  table-layout: fixed;
+}
+.table-wrap th,
+.table-wrap td {
+  min-width: 0;
+  overflow: hidden;
+}
+.table-wrap td code {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .dark-theme .table-wrap thead th {
   position: sticky;
   top: 118px;
@@ -2750,9 +2769,27 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
   background: #0d233a;
 }
 
-/* Em telas estreitas, preserva a rolagem horizontal da tabela. */
+/* Em telas estreitas, mantém a rolagem horizontal para acessar todas as colunas. */
 @media (max-width: 760px) {
-  .table-wrap { overflow-x: auto; }
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 14px;
+  }
+  .table-wrap table {
+    width: max-content;
+    min-width: 760px;
+    table-layout: auto;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    overflow: visible;
+  }
+  .table-wrap td code {
+    display: inline;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+  }
   .dark-theme .table-wrap thead th { top: 114px; }
 }
 
