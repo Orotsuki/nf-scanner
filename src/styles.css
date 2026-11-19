@@ -2739,7 +2739,11 @@ th.check-cell, td.check-cell { width:42px; min-width:42px; padding-left:13px !im
 .topbar { z-index: 140; }
 .top-menu-wrap { position: relative; z-index: 150; }
 .top-menu { z-index: 160; }
-.list-fixed-toolbar { z-index: 25; }
+.list-fixed-toolbar { top: 70px; z-index: 25; }
+
+@media (max-width: 720px) {
+  .list-fixed-toolbar { top: 66px; }
+}
 
 /* When the account menu opens, dim the page behind it so fixed list controls
    never appear to run through the menu. */
