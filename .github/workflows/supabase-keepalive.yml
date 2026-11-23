@@ -1,0 +1,41 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Two real, read-only database queries per day (06:17 and 18:17 BRT).
+    - cron: "17 9,21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database-activity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Query Supabase database
+        env:
+          SUPABASE_URL: https://vopvxndgkzexhsfkxoov.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Missing GitHub Actions secret SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+
+          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
+            --retry 2 --retry-delay 5 \
+            "${SUPABASE_URL}/rest/v1/notas_fiscais?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}")
+
+          if [ "${status}" -lt 200 ] || [ "${status}" -ge 300 ]; then
+            echo "::error::Supabase database query failed with HTTP ${status}"
+            cat response.json
+            exit 1
+          fi
+
+          echo "Supabase database query succeeded (HTTP ${status})."
