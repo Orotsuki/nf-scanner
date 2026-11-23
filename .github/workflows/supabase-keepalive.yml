@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Two real, read-only database queries per day (06:17 and 18:17 BRT).
-    - cron: "17 9,21 * * *"
+    # Three real, read-only database queries per day (08:17, 14:17 and 20:17 BRT).
+    - cron: "17 11,17,23 * * *"
   workflow_dispatch:
 
 permissions:
